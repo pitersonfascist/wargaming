@@ -7,7 +7,7 @@ setup(name='warg', version='1.0.0',
 
       #  Uncomment one or more lines below in the install_requires section
       #  for the specific client drivers/modules your application needs.
-      install_requires=['greenlet', 'gevent', 'Flask>=0.7.2', 'MarkupSafe',
+      install_requires=['greenlet', 'gevent<=1.0.0', 'Flask>=0.7.2', 'MarkupSafe',
                       'http',
                       'redis',
                       'pillow',
