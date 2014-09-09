@@ -1,6 +1,6 @@
 from setuptools import setup
 
-setup(name='uhelp', version='1.0.1',
+setup(name='warg', version='1.0.0',
       description='OpenShift Python-2.7 Community Cartridge based application',
       author='Ievgenii Petrenko', author_email='ievgeniip@gmail.com',
       url='http://www.python.org/sigs/distutils-sig/',
