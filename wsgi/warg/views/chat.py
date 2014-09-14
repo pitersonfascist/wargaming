@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from uhelp import api_route, app
+from warg import api_route, app
 from flask import request, render_template
-from uhelp.views import rs
-from uhelp.views.users import loggedUserUid
+from warg.views import rs
+from warg.views.users import loggedUserUid
 import json
 from datetime import datetime
 import calendar

@@ -1,17 +1,17 @@
 from warg import app
 
-#import uhelp.views
-#import uhelp.views.users
-##import uhelp.views.cities
-#import uhelp.views.looks
-#import uhelp.views.look_likes
-##import uhelp.views.look_owners
-#import uhelp.views.look_comments
-#import uhelp.views.followers
-#import uhelp.views.categories
-#import uhelp.views.system
-#import uhelp.views.full_text
-#import uhelp.views.chat
+import warg.views
+import warg.views.users
+import warg.views.tanks
+import warg.views.battle
+#import warg.views.look_likes
+##import warg.views.look_owners
+#import warg.views.look_comments
+import warg.views.followers
+#import warg.views.categories
+import warg.views.system
+import warg.views.full_text
+#import warg.views.chat
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
-from uhelp import api_route, app, requires_auth
+from warg import api_route, app, requires_auth
 from flask import Response
-from uhelp.views import rs
+from warg.views import rs
 import json
 import os
 

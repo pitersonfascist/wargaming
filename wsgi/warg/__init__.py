@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, send_file, redirect, render_template, request, Response  # url_for,
+from flask import Flask, send_file, redirect, request, Response  # url_for,
 from functools import wraps
 #from SMTPHandler import TlsSMTPHandler
 from apscheduler.scheduler import Scheduler
@@ -22,6 +22,7 @@ sched.start()
 
 print "___init___", __name__
 # Schedules job_function to be run on the each 8 hours
+
 
 def api_response(f, jsondump):
     @wraps(f)

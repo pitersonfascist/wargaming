@@ -89,7 +89,7 @@ class CustomWSGIHandler(WebSocketHandler):
     
     def __init__(self, socket, address, server, rfile=None):
         super(CustomWSGIHandler, self).__init__(socket, address, server, rfile)
-        gm = TlsSMTPHandler(("smtp.rambler.ru", 587), 'gamer_blin@rambler.ru', ['ievgeniip@gmail.com'], 'uHelp service Error', ('gamer_blin@rambler.ru', 'agafochka'))
+        gm = TlsSMTPHandler(("smtp.rambler.ru", 587), 'gamer_blin@rambler.ru', ['ievgeniip@gmail.com'], 'Wargaming service Error', ('gamer_blin@rambler.ru', 'agafochka'))
         gm.setLevel(logging.ERROR)
         #self.logger = logging.getLogger()
         self.logger.addHandler(gm)
