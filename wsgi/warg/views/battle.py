@@ -11,7 +11,7 @@ from time import mktime
 
 battle_types = ["platoon", "team", "absolute", "champion", "middle", "junior", "training", "strongholds", "clan_wars"]
 
-battle_model = {'type', 'create_date', 'descr', 'battle_date', 'privacy'}
+battle_model = {'type', 'descr', 'battle_date', 'privacy'}
 
 privacy = ["private", "following", "all"]
 
@@ -72,7 +72,7 @@ def update_battle(battle_id):
         return -3
 
     battle = json.loads(rs.hget("battle:%d" % battle_id, 'data'))
-    battle_old = battle.clone()
+    battle_old = battle.copy()
 
     fulldata = True
     for k in battle_model:
@@ -87,13 +87,13 @@ def update_battle(battle_id):
         return "Wrong battle type"
 
     if battle_old['type'] != data['type']:
-        rs.srem("battles:%s" % data['type'], battle_id)
+        rs.srem("battles:%s" % battle_old['type'], battle_id)
     if battle_old['privacy'] != data['privacy']:
-        rs.srem("privacy:%s" % data['privacy'], battle_id)
+        rs.srem("privacy:%s" % battle_old['privacy'], battle_id)
 
     tanks = rs.smembers("battle:%d:tanks" % battle_id)
     for tank_id in tanks:
-        rs.srem("tank:%d:battles" % tank_id, battle_id)
+        rs.srem("tank:%s:battles" % tank_id, battle_id)
     rs.delete("battle:%d:tanks" % battle_id)
 
     process_battle_db(battle_id, uid, battle, data.get("tanks", None))
@@ -137,22 +137,26 @@ def get_battle(battle_id):
     return {} if len(res) == 0 else res[0]
 
 
+@api_route('/battle/<int:battle_id>/tanks', methods=['GET'], jsondump=False)
+def get_battle_tanks(battle_id):
+    tanks = rs.sort("battle:%d:tanks" % battle_id, get='tank:*')
+    return "[" + ",".join(tanks) + "]"
+
+
 def get_battles_arr_by_set(key, by2=None, offset=0, count=20):
     #start_time = time.time()
     uid = loggedUserUid()
     battles = []
     lua = """local r1 = redis.call('sort', KEYS[1], 'BY', KEYS[2], 'DESC', 'LIMIT', KEYS[4], KEYS[5],
     'GET', 'battle:*->data',
-    'GET', 'battle:*->uid', 'GET', 'battle:*->tanks', 'GET', '#');
+    'GET', 'battle:*->uid', 'GET', '#', 'GET', '#', 'GET', '#', 'GET', '#');
 for i = 1, table.getn(r1) do
-  if i % 4 == 1 then
-    r1[i+3] = redis.call('sismember', 'users_online', tostring(r1[i+2]))
-    r1[i+1] = redis.call('get', 'users:' .. tostring(r1[i+2]))
-    local tanks = {}
-    for _,key in ipairs(r1[i+3]) do
-        tanks[#tanks+1] = redis.call('GET', 'tank:'..key)
-    end
-    r1[i+2] = tanks
+  if i % 6 == 1 then
+    r1[i+2] = redis.call('get', 'users:' .. tostring(r1[i+1]))
+    r1[i+1] = redis.call('sismember', 'users_online', tostring(r1[i+1]))
+    r1[i+3] = redis.call('smembers', 'battle:' .. tostring(r1[i+3]) .. ':tanks')
+    r1[i+4] = redis.call('sismember', 'battle:' .. tostring(KEYS[1]) .. ':accepted', r1[i+4])
+    r1[i+5] = redis.call('sismember', 'battle:' .. tostring(KEYS[1]) .. ':users', r1[i+5])
   end
 end
 return r1;"""
@@ -160,12 +164,14 @@ return r1;"""
     # str(by2) if by2 is not None else
     rows = rs.eval(lua, 5, key, "battle:*->battle_date", uid, offset, count)
     for i in range(0, len(rows) - 1):
-        if i % 4 != 0 or rows[i] is None:
+        if i % 6 != 0 or rows[i] is None:
             continue
         l = json.loads(rows[i])
-        l['user'] = json.loads(rows[i + 1])
-        l['user']['is_online'] = rows[i + 3]
-        l['tanks'] = json.loads('[%s]' % ",".join(rows[i + 2]))
+        l['user'] = json.loads(rows[i + 2])
+        l['user']['is_online'] = rows[i + 1]
+        l['tanks'] = rows[i + 3]
+        l['accepted'] = rows[i + 4]
+        l['followers'] = rows[i + 5]
         battles.append(l)
 
     #print time.time() - start_time, "seconds"

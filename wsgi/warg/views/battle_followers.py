@@ -1,0 +1,111 @@
+# -*- coding: utf-8 -*-
+from warg import api_route, requires_auth
+from flask import request
+from warg.views import rs
+import json
+from warg.views.users import loggedUserUid
+"""
+return:
+-1  battle_id unavailible
+-2  not logined
+1 ok
+"""
+
+
+@api_route('/battle/<int:battle_id>/follow', methods=['POST', 'PUT'])
+def battleFollowUser(battle_id):
+    if rs.exists("battle:" + str(battle_id)) != 1:
+        return -1
+    uid = loggedUserUid()
+    if uid == 0:
+        return -2
+    return followBattleByUser(battle_id, uid)
+
+
+@api_route('/battle/<int:battle_id>/follow/<int:user_id>', methods=['POST', 'PUT'])
+def battleAddUser(battle_id, user_id):
+    if rs.exists("battle:" + str(battle_id)) != 1:
+        return -1
+    if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
+        return -2
+    return followBattleByUser(battle_id, user_id)
+
+
+@api_route('/battle/<int:battle_id>/accept/<int:user_id>', methods=['POST', 'PUT'])
+def battleAcceptUser(battle_id, user_id):
+    if rs.exists("battle:" + str(battle_id)) != 1:
+        return -1
+    if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
+        return -2
+    rs.sadd('battle:%d:accepted' % battle_id, user_id)
+    return rs.scard('battle:%d:accepted' % battle_id)
+
+
+def followBattleByUser(battle_id, by_user_id):
+    rs.sadd('battle:%d:users' % battle_id, by_user_id)
+    rs.sadd('user:%d:battles' % by_user_id, battle_id)
+    return rs.scard('battle:%d:users' % battle_id)
+
+
+@api_route('/battle/<int:battle_id>/unfollow', methods=['POST'])
+def unfollowBattle(battle_id):
+    if rs.exists("battle:" + str(battle_id)) != 1:
+        return -1
+    uid = loggedUserUid()
+    if uid == 0:
+        return -2
+
+    return unFollowBattleByUser(battle_id, uid)
+
+
+@api_route('/battle/<int:battle_id>/unfollow/<int:user_id>', methods=['POST', 'PUT'])
+def battleDelUser(battle_id, user_id):
+    if rs.exists("battle:" + str(battle_id)) != 1:
+        return -1
+    if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
+        return -2
+    return followBattleByUser(battle_id, user_id)
+
+
+@api_route('/battle/<int:battle_id>/reject/<int:user_id>', methods=['POST', 'PUT'])
+def battleRejectUser(battle_id, user_id):
+    if rs.exists("battle:" + str(battle_id)) != 1:
+        return -1
+    if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
+        return -2
+    rs.srem('battle:%d:accepted' % battle_id, user_id)
+    return rs.scard('battle:%d:accepted' % battle_id)
+
+
+def unFollowBattleByUser(battle_id, by_user_id):
+    rs.srem('battle:%d:users' % battle_id, by_user_id)
+    rs.srem('user:%d:battles' % by_user_id, battle_id)
+    return rs.scard('battle:%d:users' % battle_id)
+
+
+@api_route('/battle/<int:battle_id>/followers', methods=['GET'], jsondump=True)
+def getBattleFollowers(battle_id):
+    if rs.exists("battle:" + str(battle_id)) != 1:
+        return '[]'
+    offset = request.args.get("offset", 0)
+    count = request.args.get("count", 20)
+    #rows = rs.sort('battle:' + str(battle_id) + ':users', start=offset, num=count, desc=True, get='users:*')
+    lua = """local r1 = redis.call('sort', 'battle:'..tostring(KEYS[1])..':users', 'LIMIT', KEYS[3], KEYS[4],
+    'GET', 'users:*', 'GET', '#', 'GET', '#');
+for i = 1, table.getn(r1) do
+  if i % 3 == 1 then
+    r1[i+1] = redis.call('sismember', 'user:' .. tostring(r1[i+1]) .. ':followers', KEYS[2])
+    r1[i+2] = redis.call('sismember', 'battle:' .. tostring(KEYS[1]) .. ':accepted', r1[i+2])
+  end
+end
+return r1;"""
+    rows = rs.eval(lua, 4, battle_id, loggedUserUid(), offset, count)
+    users = []
+    for i in range(0, len(rows) - 1):
+        if i % 3 != 0 or rows[i] is None:
+            continue
+        u = json.loads(rows[i])
+        u['is_follow'] = rows[i + 1]
+        u['accepted'] = rows[i + 2]
+        users.append(u)
+    return users

@@ -22,7 +22,7 @@ def followUser(user_id):
     uid = loggedUserUid()
     if uid == 0:
         return -2
-    followUserByUser(user_id, str(uid))
+    return followUserByUser(user_id, str(uid))
 
 
 def followUserByUser(user_id, by_user_id):

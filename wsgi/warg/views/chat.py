@@ -30,13 +30,12 @@ def websocket_policyfile():
 
 @api_route('/chat/websocket')
 def websocket_api():
+    uid = loggedUserUid()
+    if uid == 0:
+        return "Not authorized"
     if request.environ.get('wsgi.websocket'):
         ws = request.environ['wsgi.websocket']
-        uid = loggedUserUid()
         print "New user ", uid, "joined"
-        if uid == 0:
-            ws.close()
-            return "Not authorized"
         if participants.get(str(uid)) is None:
             participants[str(uid)] = set()
         participants[str(uid)].add(ws)

@@ -75,7 +75,7 @@ class TlsSMTPHandler(logging.handlers.SMTPHandler):
                 smtp.starttls() # for tls add this line
                 smtp.ehlo() # for tls add this line
                 smtp.login(self.username, self.password)
-            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
+            #smtp.sendmail(self.fromaddr, self.toaddrs, msg)
             smtp.quit()
         except (KeyboardInterrupt, SystemExit):
             pass
