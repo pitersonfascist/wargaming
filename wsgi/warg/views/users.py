@@ -138,7 +138,7 @@ def loggedUserUid():
         if request.cookies.get('uSSID') and rs.exists('ussid:' + request.cookies.get('uSSID')) == 1:
             uid = rs.hget('ussid:' + request.cookies.get('uSSID'), 'uid')
             uid = json.loads(rs.get("users:%s" % uid))['id']
-            return str(uid)  # str for capability with prev
+            return uid  # str for capability with prev
     except:
         pass
     return 0
