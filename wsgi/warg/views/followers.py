@@ -52,7 +52,7 @@ def unfollowUser(user_id):
 @api_route('/user/<int:user_id>/following', methods=['GET'], jsondump=True)
 def getUserFollowing(user_id):
     if rs.exists("users:" + str(user_id)) != 1:
-        return '[]'
+        return []
     offset = request.args.get("offset", 0)
     count = request.args.get("count", 20)
     rows = rs.sort('user:' + str(user_id) + ':following', start=offset, num=count, desc=True, get='users:*')
@@ -79,7 +79,7 @@ return r1;"""
 @api_route('/user/<int:user_id>/followers', methods=['GET'], jsondump=True)
 def getUserFollowers(user_id):
     if rs.exists("users:" + str(user_id)) != 1:
-        return '[]'
+        return []
     offset = request.args.get("offset", 0)
     count = request.args.get("count", 20)
     rows = rs.sort('user:' + str(user_id) + ':followers', start=offset, num=count, desc=True, get='users:*')
