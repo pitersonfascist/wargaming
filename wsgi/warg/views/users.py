@@ -16,6 +16,23 @@ import urllib
 import hashlib
 
 app_id = '541bb590158341e9e7675ffe10629c02'
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.lower().rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+
+def account_info(access_token, account_id):
+    params = urllib.urlencode({'application_id': app_id, 'access_token': access_token,\
+        'account_id': request.args.get('account_id'), 'fields': 'account_id,clan_id,created_at,global_rating,nickname,private.friends'})
+    conn = httplib.HTTPSConnection("api.worldoftanks.ru")
+    conn.request("GET", "/wot/account/info/?" + params)
+    res = conn.getresponse()
+    data = json.loads(res.read())
+    conn.close()
+    return data
 
 
 @app.route('/api/user/wot', methods=['POST', 'GET'])
@@ -26,18 +43,15 @@ def register_wot():
     wotuid = 'wot_user:' + request.args.get('account_id')
     print "wotuid", wotuid, access_token
     if rs.exists(wotuid) != 1:
-        params = urllib.urlencode({'application_id': app_id, 'access_token': access_token, \
-        'account_id': request.args.get('account_id'), 'fields':'account_id,clan_id,created_at,global_rating,nickname,private.friends'})
-        conn = httplib.HTTPSConnection("api.worldoftanks.ru")
-        conn.request("GET", "/wot/account/info/?" + params)
-        res = conn.getresponse()
-        data = json.loads(res.read())
-        conn.close()
+        data = account_info(access_token, request.args.get('account_id'))
         if data['status'] == 'ok':
             insert_wot_user(data['data'][request.args.get('account_id')])
         else:
             return json.dumps("Error: " + data['error']['message'])
-    uid = rs.hget(wotuid, 'uid')    
+    if rs.hget(wotuid, 'virtual') == '1':
+        rs.hmset(wotuid, 'virtual', 0)
+    uid = rs.hget(wotuid, 'uid')
+    rs.srem("users:virtual", uid)
     return make_login_response(uid, False)
     #return HttpResponse(simplejson.dumps(uid), mimetype='application/json')
 
@@ -70,7 +84,7 @@ def process_user_image(name, ext, uid):
     os.unlink(app.config['UPLOAD_FOLDER'] + name + "_orig." + ext)
 
 
-def insert_wot_user(profile):
+def insert_wot_user(profile, virtual=0):
     uid = rs.incr('users_counter')
     outfile = user_directory(uid)
     ext = 'jpg'
@@ -91,9 +105,31 @@ def insert_wot_user(profile):
             followUserByUser(rs.hget(wotfid, 'uid'), str(uid))
     rs.set("users:" + str(uid), json.dumps(user_data))
     rs.sadd("user_soc_links:" + str(uid), wotuid)
-    rs.hmset(wotuid, {'uid': str(uid), 'profile': json.dumps(profile)})
+    rs.hmset(wotuid, {'uid': str(uid), 'profile': json.dumps(profile), "virtual": virtual})
+    if virtual == 1:
+        rs.sadd("users:virtual", uid)
     from warg.views.full_text import storeUserInIndex
     storeUserInIndex(user_data)
+    return uid
+
+
+@api_route('/user/avatar', methods=['POST'])
+def add_user_avatar():
+    uid = loggedUserUid()
+    if uid == 0:
+        return -2
+    outfile = user_directory(uid)
+    for f in request.files:
+        _file = request.files.get(f)
+        ensure_dir(app.config['UPLOAD_FOLDER'] + outfile)
+        print "File: " + f, _file.filename
+        if allowed_file(_file.filename):
+            ext = _file.filename.rsplit('.', 1)[1]
+            fname = outfile + str(uid)
+            _file.save(app.config['UPLOAD_FOLDER'] + fname + "_orig." + ext)
+            process_user_image(outfile + str(uid), ext, uid)
+        break
+    return uid
 
 
 def loggedUserUid():

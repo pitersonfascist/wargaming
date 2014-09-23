@@ -41,6 +41,9 @@ def create_battle():
     bdata['id'] = bid
     bdata['create_date'] = int(calendar.timegm(datetime.utcnow().timetuple()))
     process_battle_db(bid, uid, bdata, data.get("tanks", None))
+    from warg.views.battle_followers import battleAddUser, battleAcceptUser
+    battleAddUser(bid, uid)
+    battleAcceptUser(bid, uid)
     #from warg.views.full_text import storeBattleInIndex
     #storeBattleInIndex(bdata, None)
     rs.sadd("whoosh:battles:added", bid)
