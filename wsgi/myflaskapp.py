@@ -11,7 +11,7 @@ import warg.views.followers
 #import warg.views.categories
 import warg.views.system
 import warg.views.full_text
-#import warg.views.chat
+import warg.views.chat
 
 
 if __name__ == "__main__":

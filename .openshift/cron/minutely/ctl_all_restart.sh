@@ -1,6 +1,6 @@
 #!/bin/bash
 #Configure your Openshift SSH username
-sshid='51b418da4382eccb0a000998'
+sshid='540f50ee5973ca056000034c'
   
 #Running the script, for your own applications
 curl -I warg-piterson.rhcloud.com 2> /dev/null | head -1 | grep -q '200\|302'
