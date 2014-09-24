@@ -140,6 +140,46 @@ def get_battle(battle_id):
     return {} if len(res) == 0 else res[0]
 
 
+@api_route('/user/<int:user_id>/battles', methods=['GET'])
+def get_user_battles(user_id):
+    return get_battles_by_set("user_battles:%d" % user_id)
+
+
+@api_route('/battles/all', methods=['GET'])
+def get_privacy_all_battles():
+    return get_battles_by_set("privacy:all")
+
+
+@api_route('/user/allowed/battles', methods=['GET'])
+def get_allowed_battles():
+    uid = loggedUserUid()
+    if uid == 0:
+        return []
+    tmp = hashlib.md5(str(mktime(datetime.now().timetuple()))).hexdigest() + "allowed_battle_" + str(uid)
+    rs.sort('user:%d:followers' % uid, get=["user:*->battles"], store=tmp)
+    rs.sinterstore(tmp, tmp, "privacy:private")
+    rs.sunionstore(tmp, tmp, 'user:%d:battles' % uid, "privacy:all", "user_battles:%d" % uid)
+    res = get_battles_by_set(tmp)
+    rs.delete(tmp)
+    return res
+
+
+@api_route('/user/followed/battles', methods=['GET'])
+def get_followed_battles():
+    uid = loggedUserUid()
+    if uid == 0:
+        return []
+    return get_battles_by_set("user:%d:battles" % uid)
+
+
+@api_route('/user/accepted/battles', methods=['GET'])
+def get_accepted_battles():
+    uid = loggedUserUid()
+    if uid == 0:
+        return []
+    #return get_battles_by_set("user" % uid)
+
+
 @api_route('/battle/<int:battle_id>/tanks', methods=['GET'], jsondump=False)
 def get_battle_tanks(battle_id):
     tanks = rs.sort("battle:%d:tanks" % battle_id, get='tank:*')
