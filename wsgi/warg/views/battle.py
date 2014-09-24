@@ -13,7 +13,7 @@ battle_types = ["platoon", "team", "absolute", "champion", "middle", "junior", "
 
 battle_model = {'type', 'descr', 'battle_date', 'privacy'}
 
-privacy = ["private", "following", "all"]
+privacy = ["PRIVATE", "FOLLOWING", "ALL"]
 
 
 @api_route('/battle', methods=['POST'])
@@ -172,14 +172,6 @@ def get_followed_battles():
     return get_battles_by_set("user:%d:battles" % uid)
 
 
-@api_route('/user/accepted/battles', methods=['GET'])
-def get_accepted_battles():
-    uid = loggedUserUid()
-    if uid == 0:
-        return []
-    #return get_battles_by_set("user" % uid)
-
-
 @api_route('/battle/<int:battle_id>/tanks', methods=['GET'], jsondump=False)
 def get_battle_tanks(battle_id):
     tanks = rs.sort("battle:%d:tanks" % battle_id, get='tank:*')
@@ -192,14 +184,16 @@ def get_battles_arr_by_set(key, by2=None, offset=0, count=20):
     battles = []
     lua = """local r1 = redis.call('sort', KEYS[1], 'BY', KEYS[2], 'DESC', 'LIMIT', KEYS[4], KEYS[5],
     'GET', 'battle:*->data',
-    'GET', 'battle:*->uid', 'GET', '#', 'GET', '#', 'GET', '#', 'GET', '#');
+    'GET', 'battle:*->uid', 'GET', '#', 'GET', '#', 'GET', '#', 'GET', '#', 'GET', '#', 'GET', '#');
 for i = 1, table.getn(r1) do
-  if i % 6 == 1 then
+  if i % 8 == 1 then
     r1[i+2] = redis.call('get', 'users:' .. tostring(r1[i+1]))
     r1[i+1] = redis.call('sismember', 'users_online', tostring(r1[i+1]))
     r1[i+3] = redis.call('smembers', 'battle:' .. tostring(r1[i+3]) .. ':tanks')
-    r1[i+4] = redis.call('sismember', 'battle:' .. tostring(KEYS[1]) .. ':accepted', r1[i+4])
-    r1[i+5] = redis.call('sismember', 'battle:' .. tostring(KEYS[1]) .. ':users', r1[i+5])
+    r1[i+4] = redis.call('sismember', 'battle:' .. tostring(r1[i+4]) .. ':accepted', KEYS[3])
+    r1[i+5] = redis.call('sismember', 'battle:' .. tostring(r1[i+5]) .. ':users', KEYS[3])
+    r1[i+6] = redis.call('scard', 'battle:' .. tostring(r1[i+6]) .. ':accepted')
+    r1[i+7] = redis.call('scard', 'battle:' .. tostring(r1[i+7]) .. ':users')
   end
 end
 return r1;"""
@@ -207,14 +201,16 @@ return r1;"""
     # str(by2) if by2 is not None else
     rows = rs.eval(lua, 5, key, "battle:*->battle_date", uid, offset, count)
     for i in range(0, len(rows) - 1):
-        if i % 6 != 0 or rows[i] is None:
+        if i % 8 != 0 or rows[i] is None:
             continue
         l = json.loads(rows[i])
         l['user'] = json.loads(rows[i + 2])
         l['user']['is_online'] = rows[i + 1]
         l['tanks'] = rows[i + 3]
-        l['accepted'] = rows[i + 4]
-        l['followers'] = rows[i + 5]
+        l['is_accepted'] = rows[i + 4]
+        l['is_follow'] = rows[i + 5]
+        l['accepted'] = rows[i + 6]
+        l['followers'] = rows[i + 7]
         battles.append(l)
 
     #print time.time() - start_time, "seconds"

@@ -26,7 +26,7 @@ def allowed_file(filename):
 
 def account_info(access_token, account_id):
     params = urllib.urlencode({'application_id': app_id, 'access_token': access_token,\
-        'account_id': request.args.get('account_id'), 'fields': 'account_id,clan_id,created_at,global_rating,nickname,private.friends'})
+        'account_id': account_id, 'fields': 'account_id,clan_id,created_at,global_rating,nickname,private.friends'})
     conn = httplib.HTTPSConnection("api.worldoftanks.ru")
     conn.request("GET", "/wot/account/info/?" + params)
     res = conn.getresponse()
@@ -99,10 +99,11 @@ def insert_wot_user(profile, virtual=0):
         if k != 'private':
             user_data[k] = profile[k]
     from warg.views.followers import followUserByUser
-    for fid in profile['private']['friends']:
-        wotfid = 'wot_user:%d' % fid
-        if rs.exists(wotfid) == 1:
-            followUserByUser(rs.hget(wotfid, 'uid'), str(uid))
+    if profile['private'] is not None:
+        for fid in profile['private']['friends']:
+            wotfid = 'wot_user:%d' % fid
+            if rs.exists(wotfid) == 1:
+                followUserByUser(rs.hget(wotfid, 'uid'), str(uid))
     rs.set("users:" + str(uid), json.dumps(user_data))
     rs.sadd("user_soc_links:" + str(uid), wotuid)
     rs.hmset(wotuid, {'uid': str(uid), 'profile': json.dumps(profile), "virtual": virtual})

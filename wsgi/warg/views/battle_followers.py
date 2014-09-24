@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from warg import api_route, requires_auth
+from warg import api_route
 from flask import request
 from warg.views import rs
 import json
@@ -45,7 +45,7 @@ def battleAddExternalUser(battle_id, account_id):
         from warg.views.users import insert_wot_user, account_info
         data = account_info(access_token, account_id)
         if data['status'] == 'ok':
-            uid = insert_wot_user(data['data'][account_id], 1)
+            uid = insert_wot_user(data['data'][str(account_id)], 1)
         else:
             return json.dumps("Error: " + data['error']['message'])
     else:
@@ -59,14 +59,16 @@ def battleAcceptUser(battle_id, user_id):
         return -1
     if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
         return -2
+    rs.zrem('battle:%d:users' % battle_id, user_id)
+    rs.zadd('battle:%d:users' % battle_id, user_id, 1)
     rs.sadd('battle:%d:accepted' % battle_id, user_id)
     return rs.scard('battle:%d:accepted' % battle_id)
 
 
 def followBattleByUser(battle_id, by_user_id):
-    rs.sadd('battle:%d:users' % battle_id, by_user_id)
+    rs.zadd('battle:%d:users' % battle_id, by_user_id, 0)
     rs.sadd('user:%d:battles' % by_user_id, battle_id)
-    return rs.scard('battle:%d:users' % battle_id)
+    return rs.zcard('battle:%d:users' % battle_id)
 
 
 @api_route('/battle/<int:battle_id>/unfollow', methods=['POST'])
@@ -97,15 +99,19 @@ def battleRejectUser(battle_id, user_id):
         return -1
     if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
         return -2
+    if loggedUserUid() == user_id:
+        return -3
+    rs.zrem('battle:%d:users' % battle_id, user_id)
+    rs.zadd('battle:%d:users' % battle_id, user_id, 0)
     rs.srem('battle:%d:accepted' % battle_id, user_id)
     return rs.scard('battle:%d:accepted' % battle_id)
 
 
 def unFollowBattleByUser(battle_id, by_user_id):
-    rs.srem('battle:%d:users' % battle_id, by_user_id)
+    rs.zrem('battle:%d:users' % battle_id, by_user_id)
     rs.srem('user:%d:battles' % by_user_id, battle_id)
     rs.srem('battle:%d:accepted' % battle_id, by_user_id)
-    return rs.scard('battle:%d:users' % battle_id)
+    return rs.zcard('battle:%d:users' % battle_id)
 
 
 @api_route('/battle/<int:battle_id>/followers', methods=['GET'], jsondump=True)
@@ -115,12 +121,12 @@ def getBattleFollowers(battle_id):
     offset = request.args.get("offset", 0)
     count = request.args.get("count", 20)
     #rows = rs.sort('battle:' + str(battle_id) + ':users', start=offset, num=count, desc=True, get='users:*')
-    lua = """local r1 = redis.call('sort', 'battle:'..tostring(KEYS[1])..':users', 'LIMIT', KEYS[3], KEYS[4],
+    lua = """local r1 = redis.call('sort', 'battle:'..tostring(KEYS[1])..':users', 'BY', 'score','DESC', 'LIMIT', KEYS[3], KEYS[4],
     'GET', 'users:*', 'GET', '#', 'GET', '#', 'GET', '#');
 for i = 1, table.getn(r1) do
   if i % 4 == 1 then
     r1[i+1] = redis.call('sismember', 'user:' .. tostring(r1[i+1]) .. ':followers', KEYS[2])
-    r1[i+2] = redis.call('sismember', 'battle:' .. tostring(KEYS[1]) .. ':accepted', r1[i+2])
+    r1[i+2] = redis.call('sismember', 'battle:' .. tostring(KEYS[1]) .. ':accepted', r1[i+3])
     r1[i+3] = redis.call('sismember', 'users:virtual', r1[i+3])
   end
 end
@@ -132,7 +138,7 @@ return r1;"""
             continue
         u = json.loads(rows[i])
         u['is_follow'] = rows[i + 1]
-        u['accepted'] = rows[i + 2]
+        u['is_accepted'] = rows[i + 2]
         u['virtual'] = rows[i + 3]
         users.append(u)
     return users
