@@ -207,7 +207,7 @@ return r1;"""
         l['user']['is_online'] = rows[i + 1]
         l['tanks'] = []  # rows[i + 3]
         l['is_accepted'] = rows[i + 4]
-        l['is_follow'] = 1 if rows[i + 5] else 0
+        l['is_follow'] = 1 if rows[i + 5] >= 0 else 0
         l['accepted'] = rows[i + 6]
         l['followers'] = rows[i + 7]
         battles.append(l)
