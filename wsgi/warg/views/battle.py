@@ -107,7 +107,7 @@ def update_battle(battle_id):
 
 @api_route('/battle/<int:battle_id>/delete', methods=['POST'])
 def delete_battle(battle_id, admin=0):
-    if rs.exists("battle:%d" % battle_id) == 1 and (admin == 1 or loggedUserUid() == rs.hget("battle:%d" % battle_id, 'uid')):
+    if rs.exists("battle:%d" % battle_id) == 1 and (admin == 1 or str(loggedUserUid()) == rs.hget("battle:%d" % battle_id, 'uid')):
         uid = rs.hget("battle:%d" % battle_id, 'uid')
         rs.srem("user_battles:" + uid, battle_id)
         rs.sadd("battles_ids", battle_id)
@@ -116,7 +116,7 @@ def delete_battle(battle_id, admin=0):
         rs.srem("privacy:%s" % battle['privacy'], battle_id)
         tanks = rs.smembers("battle:%d:tanks" % battle_id)
         for tank_id in tanks:
-            rs.srem("tank:%d:battles" % tank_id, battle_id)
+            rs.srem("tank:%s:battles" % tank_id, battle_id)
         rs.delete("battle:%d:tanks" % battle_id)
         rs.delete("battle:%d" % battle_id)
         rs.sadd("whoosh:battles:deleted", battle_id)
