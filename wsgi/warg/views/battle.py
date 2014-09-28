@@ -66,7 +66,7 @@ def update_battle(battle_id):
     uid = loggedUserUid()
     if uid == 0:
         return -2
-    if uid != rs.hget("battle:%d" % battle_id, 'uid'):
+    if str(uid) != rs.hget("battle:%d" % battle_id, 'uid'):
         return -1
     try:
         data = json.loads(request.stream.read())
