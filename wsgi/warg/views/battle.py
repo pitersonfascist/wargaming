@@ -188,8 +188,8 @@ for i = 1, table.getn(r1) do
   if i % 8 == 1 then
     r1[i+2] = redis.call('get', 'users:' .. tostring(r1[i+1]))
     r1[i+1] = redis.call('sismember', 'users_online', tostring(r1[i+1]))
-    r1[i+3] = redis.call('smembers', 'battle:' .. tostring(r1[i+3]) .. ':tanks')
-    r1[i+4] = redis.call('sismember', 'battle:' .. tostring(r1[i+4]) .. ':accepted', KEYS[3])
+--    r1[i+3] = redis.call('smembers', 'battle:' .. tostring(r1[i+3]) .. ':tanks')
+    r1[i+4] = redis.call('sismember', 'battle:' .. tostring(r1[i+4]) .. ':accepted', tostring(KEYS[3]))
     r1[i+5] = redis.call('zrank', 'battle:' .. tostring(r1[i+5]) .. ':users', KEYS[3])
     r1[i+6] = redis.call('scard', 'battle:' .. tostring(r1[i+6]) .. ':accepted')
     r1[i+7] = redis.call('zcard', 'battle:' .. tostring(r1[i+7]) .. ':users')
@@ -205,9 +205,9 @@ return r1;"""
         l = json.loads(rows[i])
         l['user'] = json.loads(rows[i + 2])
         l['user']['is_online'] = rows[i + 1]
-        l['tanks'] = rows[i + 3]
+        l['tanks'] = []  # rows[i + 3]
         l['is_accepted'] = rows[i + 4]
-        l['is_follow'] = rows[i + 5] if 1 else 0
+        l['is_follow'] = 1 if rows[i + 5] else 0
         l['accepted'] = rows[i + 6]
         l['followers'] = rows[i + 7]
         battles.append(l)
