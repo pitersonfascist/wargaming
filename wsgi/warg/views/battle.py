@@ -146,7 +146,7 @@ def get_user_battles(user_id):
 
 @api_route('/battles/all', methods=['GET'])
 def get_privacy_all_battles():
-    return get_battles_by_set("privacy:all")
+    return get_battles_by_set("privacy:ALL")
 
 
 @api_route('/user/allowed/battles', methods=['GET'])
@@ -156,8 +156,8 @@ def get_allowed_battles():
         return []
     tmp = hashlib.md5(str(mktime(datetime.now().timetuple()))).hexdigest() + "allowed_battle_" + str(uid)
     rs.sort('user:%d:followers' % uid, get=["user:*->battles"], store=tmp)
-    rs.sinterstore(tmp, tmp, "privacy:private")
-    rs.sunionstore(tmp, tmp, 'user:%d:battles' % uid, "privacy:all", "user_battles:%d" % uid)
+    rs.sinterstore(tmp, tmp, "privacy:PRIVATE")
+    rs.sunionstore(tmp, tmp, 'user:%d:battles' % uid, "privacy:ALL", "user_battles:%d" % uid)
     res = get_battles_by_set(tmp)
     rs.delete(tmp)
     return res
