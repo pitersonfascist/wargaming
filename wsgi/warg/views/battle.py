@@ -20,11 +20,11 @@ privacy = ["PRIVATE", "FOLLOWING", "ALL"]
 def create_battle():
     uid = loggedUserUid()
     if uid == 0:
-        return "Not authorized!"
+        return -2
     try:
         data = json.loads(request.stream.read())
     except:
-        return "Wrong json"
+        return -3
     bdata = {}
     fulldata = True
     for k in battle_model:
@@ -41,8 +41,7 @@ def create_battle():
     bdata['id'] = bid
     bdata['create_date'] = int(calendar.timegm(datetime.utcnow().timetuple()))
     process_battle_db(bid, uid, bdata, data.get("tanks", None))
-    from warg.views.battle_followers import battleAddUser, battleAcceptUser
-    battleAddUser(bid, uid)
+    from warg.views.battle_followers import battleAcceptUser
     battleAcceptUser(bid, uid)
     #from warg.views.full_text import storeBattleInIndex
     #storeBattleInIndex(bdata, None)
@@ -191,9 +190,9 @@ for i = 1, table.getn(r1) do
     r1[i+1] = redis.call('sismember', 'users_online', tostring(r1[i+1]))
     r1[i+3] = redis.call('smembers', 'battle:' .. tostring(r1[i+3]) .. ':tanks')
     r1[i+4] = redis.call('sismember', 'battle:' .. tostring(r1[i+4]) .. ':accepted', KEYS[3])
-    r1[i+5] = redis.call('sismember', 'battle:' .. tostring(r1[i+5]) .. ':users', KEYS[3])
+    r1[i+5] = redis.call('zrank', 'battle:' .. tostring(r1[i+5]) .. ':users', KEYS[3])
     r1[i+6] = redis.call('scard', 'battle:' .. tostring(r1[i+6]) .. ':accepted')
-    r1[i+7] = redis.call('scard', 'battle:' .. tostring(r1[i+7]) .. ':users')
+    r1[i+7] = redis.call('zcard', 'battle:' .. tostring(r1[i+7]) .. ':users')
   end
 end
 return r1;"""
@@ -208,7 +207,7 @@ return r1;"""
         l['user']['is_online'] = rows[i + 1]
         l['tanks'] = rows[i + 3]
         l['is_accepted'] = rows[i + 4]
-        l['is_follow'] = rows[i + 5]
+        l['is_follow'] = rows[i + 5] if 1 else 0
         l['accepted'] = rows[i + 6]
         l['followers'] = rows[i + 7]
         battles.append(l)

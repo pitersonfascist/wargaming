@@ -26,7 +26,7 @@ def allowed_file(filename):
 
 def account_info(access_token, account_id):
     params = urllib.urlencode({'application_id': app_id, 'access_token': access_token,\
-        'account_id': account_id, 'fields': 'account_id,clan_id,created_at,global_rating,nickname,private.friends'})
+        'account_id': account_id, 'fields': 'account_id,created_at,nickname,private.friends'})
     conn = httplib.HTTPSConnection("api.worldoftanks.ru")
     conn.request("GET", "/wot/account/info/?" + params)
     res = conn.getresponse()
