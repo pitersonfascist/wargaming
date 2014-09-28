@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from warg import api_route, requires_auth
-from flask import request
 from warg.views import rs
 from warg.views.users import app_id
 import json
 import urllib, httplib
 
 
+@requires_auth
 @api_route('/system/tanks/update', methods=['GET'])
 def update_tanks():
     conn = httplib.HTTPSConnection("api.worldoftanks.ru")

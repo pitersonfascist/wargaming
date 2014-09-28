@@ -117,6 +117,10 @@ def delete_battle(battle_id, admin=0):
         tanks = rs.smembers("battle:%d:tanks" % battle_id)
         for tank_id in tanks:
             rs.srem("tank:%s:battles" % tank_id, battle_id)
+        users = rs.zrange('battle:%d:users' % battle_id)
+        from warg.views.battle_followers import unFollowBattleByUser
+        for user_id in users:
+            unFollowBattleByUser(battle_id, user_id)
         rs.delete("battle:%d:tanks" % battle_id)
         rs.delete("battle:%d" % battle_id)
         rs.sadd("whoosh:battles:deleted", battle_id)

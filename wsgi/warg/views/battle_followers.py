@@ -62,6 +62,7 @@ def battleAcceptUser(battle_id, user_id):
     rs.zrem('battle:%d:users' % battle_id, user_id)
     rs.zadd('battle:%d:users' % battle_id, user_id, 1)
     rs.sadd('battle:%d:accepted' % battle_id, user_id)
+    rs.sadd('user:%d:battles' % user_id, battle_id)
     return rs.scard('battle:%d:accepted' % battle_id)
 
 
