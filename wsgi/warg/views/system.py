@@ -27,9 +27,9 @@ def systemInfo():
 return table.getn(r1);"""
     users = rs.eval(lua, 0)
     #users = rs.keys("users:*")
-    looks = rs.scard("looks_ids")
+    battles = rs.scard("battles_ids")
     #print "SYSTEM: ", os.popen("du -hs " + app.config['UPLOAD_FOLDER']).read().split()[0]
-    res = {"disk_usage":getFolderSize(app.config['UPLOAD_FOLDER']), "redis_usage":info['used_memory_human'], "users":users, "looks":looks}
+    res = {"disk_usage": getFolderSize(app.config['UPLOAD_FOLDER']), "redis_usage": info['used_memory_human'], "users": users, "battles": battles}
     return res
 
 
@@ -46,7 +46,7 @@ def getFolderSize(folder):
 
 
 def sizeof_fmt(num):
-    for x in ['bytes','KB','MB','GB','TB']:
+    for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
         if num < 1024.0:
             return "%3.1f%s" % (num, x)
         num /= 1024.0
