@@ -49,7 +49,7 @@ def register_wot():
         else:
             return json.dumps("Error: " + data['error']['message'])
     if rs.hget(wotuid, 'virtual') == '1':
-        rs.hmset(wotuid, 'virtual', 0)
+        rs.hset(wotuid, 'virtual', 0)
     uid = rs.hget(wotuid, 'uid')
     rs.srem("users:virtual", uid)
     return make_login_response(uid, False)
