@@ -170,7 +170,7 @@ for i = 1, table.getn(r1) do
   r1[i][5] = redis.call('hget', chid, 'type')
 end
 return r1;"""
-    ids = rs.eval(lua, 3, "chat:user:%d:unread" % uid, offset, offset + count)
+    ids = rs.eval(lua, 3, "chat:user:%d:unread" % uid, offset, offset + count - 1)
     #ids = rs.sort('look:' + str(look_id) + ':comments', start=offset, num=count, get='#')
     for cmid in ids:
         cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), "type": cmid[4]}

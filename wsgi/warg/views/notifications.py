@@ -22,7 +22,6 @@ def create_battle_notification(from_user, to_user, battle_id, template):
     message = ""
     if template == NTFY_BATTLE_INVITE:
         message = NTFY_BATTLE_INVITE % (battle['user']['nickname'], battle_date, battle["descr"])
-        to_user = battle['user']["id"]
     if template == NTFY_BATTLE_FOLLOW:
         usr = user_datail._original(from_user)
         to_user = battle['user']["id"]
@@ -35,12 +34,11 @@ def create_battle_notification(from_user, to_user, battle_id, template):
         message = NTFY_BATTLE_ACCEPT % (battle_date, battle["descr"])
     if template == NTFY_BATTLE_REJECT:
         message = NTFY_BATTLE_REJECT % (battle_date, battle["descr"])
-        to_user = battle['user']["id"]
     chid = "chat:message:%s:%d:" % (from_user, to_user)
     mid = rs.incr(chid + "counter")
     chid = chid + str(mid)
     score = calendar.timegm(datetime.utcnow().timetuple())
-    chatm = {"id": mid, "text": message, 'is_read': False, 'sid': from_user, 'rid': to_user, "type": "battle"}
+    chatm = {"id": mid, "text": message, 'is_read': False, 'sid': from_user, 'rid': to_user, "type": "battle", "battle_id": battle_id}
     rs.hmset(chid, chatm)
     rs.zadd("chat:user:%d:unread" % to_user, chid, score)
     unread = get_unread._original()
