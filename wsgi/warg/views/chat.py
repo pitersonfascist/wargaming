@@ -168,12 +168,15 @@ for i = 1, table.getn(r1) do
   local uid = redis.call('hget', chid, 'sid')
   r1[i][4] = redis.call('get', 'users:' .. tostring(uid))
   r1[i][5] = redis.call('hget', chid, 'type')
+  r1[i][6] = redis.call('hget', chid, 'battle_id')
 end
 return r1;"""
     ids = rs.eval(lua, 3, "chat:user:%d:unread" % uid, offset, offset + count - 1)
     #ids = rs.sort('look:' + str(look_id) + ':comments', start=offset, num=count, get='#')
     for cmid in ids:
         cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), "type": cmid[4]}
+        if cmid[5] is not None:
+            cmnt["battle_id"] = cmid[5]
         cmnt['user'] = json.loads(cmid[3])
         rows.append(cmnt)
     return rows
