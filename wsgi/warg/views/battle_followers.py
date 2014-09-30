@@ -4,6 +4,7 @@ from flask import request
 from warg.views import rs
 import json
 from warg.views.users import loggedUserUid
+from warg.views.notifications import *
 """
 return:
 -1  battle_id unavailible
@@ -19,6 +20,7 @@ def battleFollowUser(battle_id):
     uid = loggedUserUid()
     if uid == 0:
         return -2
+    create_battle_notification(uid, 0, battle_id, NTFY_BATTLE_FOLLOW)
     return followBattleByUser(battle_id, uid)
 
 
@@ -28,6 +30,7 @@ def battleAddUser(battle_id, user_id):
         return -1
     if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
         return -2
+    create_battle_notification(loggedUserUid(), user_id, battle_id, NTFY_BATTLE_INVITE)
     return followBattleByUser(battle_id, user_id)
 
 
@@ -50,6 +53,7 @@ def battleAddExternalUser(battle_id, account_id):
             return json.dumps("Error: " + data['error']['message'])
     else:
         uid = rs.hget(wotuid, 'uid')
+    create_battle_notification(loggedUserUid(), uid, battle_id, NTFY_BATTLE_INVITE)
     return followBattleByUser(battle_id, uid)
 
 
@@ -63,6 +67,7 @@ def battleAcceptUser(battle_id, user_id):
     rs.zadd('battle:%d:users' % battle_id, user_id, 1)
     rs.sadd('battle:%d:accepted' % battle_id, user_id)
     rs.sadd('user:%d:battles' % user_id, battle_id)
+    create_battle_notification(loggedUserUid(), user_id, battle_id, NTFY_BATTLE_ACCEPT)
     return rs.scard('battle:%d:accepted' % battle_id)
 
 
@@ -81,7 +86,7 @@ def unfollowBattle(battle_id):
         return -2
     if rs.hget("battle:%d" % battle_id, "uid") == str(uid):
         return -3
-
+    create_battle_notification(uid, 0, battle_id, NTFY_BATTLE_UFLLOW)
     return unFollowBattleByUser(battle_id, uid)
 
 
@@ -98,13 +103,15 @@ def battleDelUser(battle_id, user_id):
 def battleRejectUser(battle_id, user_id):
     if rs.exists("battle:" + str(battle_id)) != 1:
         return -1
-    if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
+    uid = loggedUserUid()
+    if rs.hget("battle:%d" % battle_id, "uid") != str(uid):
         return -2
-    if loggedUserUid() == user_id:
+    if uid == user_id:
         return -3
     rs.zrem('battle:%d:users' % battle_id, user_id)
     rs.zadd('battle:%d:users' % battle_id, user_id, 0)
     rs.srem('battle:%d:accepted' % battle_id, user_id)
+    create_battle_notification(uid, user_id, battle_id, NTFY_BATTLE_REJECT)
     return rs.scard('battle:%d:accepted' % battle_id)
 
 

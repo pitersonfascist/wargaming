@@ -86,15 +86,8 @@ def process_user_image(name, ext, uid):
 
 def insert_wot_user(profile, virtual=0):
     uid = rs.incr('users_counter')
-    outfile = user_directory(uid)
-    ext = 'jpg'
-    try:
-        urllib.urlretrieve(profile['photo_big'], app.config['UPLOAD_FOLDER'] + outfile + str(uid) + "_orig." + ext)
-    except:
-        os.system("cp %s %s" % (app.config['STATIC_FOLDER'] + 'no_avatar.jpg', app.config['UPLOAD_FOLDER'] + outfile + str(uid) + "_orig." + ext))
-    process_user_image(outfile + str(uid), ext, uid)
     wotuid = 'wot_user:' + str(profile['account_id'])
-    user_data = {'id': uid, 'avatar': outfile + str(uid), 'create_date': int(mktime(datetime.now().timetuple()))}
+    user_data = {'id': uid, 'avatar': None, 'create_date': int(mktime(datetime.now().timetuple()))}
     for k in profile:
         if k != 'private':
             user_data[k] = profile[k]
@@ -138,8 +131,7 @@ def loggedUserUid():
     try:
         if request.cookies.get('uSSID') and rs.exists('ussid:' + request.cookies.get('uSSID')) == 1:
             uid = rs.hget('ussid:' + request.cookies.get('uSSID'), 'uid')
-            uid = json.loads(rs.get("users:%s" % uid))['id']
-            return uid  # str for capability with prev
+            return int(uid)
     except:
         pass
     return 0

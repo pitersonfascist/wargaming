@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from warg import app
 
 import warg.views
