@@ -58,22 +58,23 @@ def battleAddExternalUser(battle_id, account_id):
 
 
 @api_route('/battle/<int:battle_id>/accept/<int:user_id>', methods=['POST', 'PUT'])
-def battleAcceptUser(battle_id, user_id):
+def battleAcceptUser(battle_id, user_id, admin=False):
     if rs.exists("battle:" + str(battle_id)) != 1:
         return -1
-    if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
+    uid = loggedUserUid()
+    if rs.hget("battle:%d" % battle_id, "uid") != str(uid) and not admin:
         return -2
-    rs.zrem('battle:%d:users' % battle_id, user_id)
     rs.zadd('battle:%d:users' % battle_id, user_id, 1)
     rs.sadd('battle:%d:accepted' % battle_id, user_id)
-    rs.sadd('user:%d:battles' % user_id, battle_id)
-    create_battle_notification(loggedUserUid(), user_id, battle_id, NTFY_BATTLE_ACCEPT)
+    rs.zadd('user:%d:battles' % user_id, battle_id, rs.zscore("battles_ids", battle_id))
+    if uid != user_id:
+        create_battle_notification(loggedUserUid(), user_id, battle_id, NTFY_BATTLE_ACCEPT)
     return rs.scard('battle:%d:accepted' % battle_id)
 
 
 def followBattleByUser(battle_id, by_user_id):
     rs.zadd('battle:%d:users' % battle_id, by_user_id, 0)
-    rs.sadd('user:%d:battles' % by_user_id, battle_id)
+    rs.zadd('user:%d:battles' % by_user_id, battle_id, rs.zscore("battles_ids", battle_id))
     return rs.zcard('battle:%d:users' % battle_id)
 
 
@@ -94,8 +95,10 @@ def unfollowBattle(battle_id):
 def battleDelUser(battle_id, user_id):
     if rs.exists("battle:" + str(battle_id)) != 1:
         return -1
-    if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
+    uid = loggedUserUid()
+    if rs.hget("battle:%d" % battle_id, "uid") != str(uid):
         return -2
+    create_battle_notification(uid, user_id, battle_id, NTFY_BATTLE_KICK)
     return unFollowBattleByUser(battle_id, user_id)
 
 
@@ -108,7 +111,6 @@ def battleRejectUser(battle_id, user_id):
         return -2
     if uid == user_id:
         return -3
-    rs.zrem('battle:%d:users' % battle_id, user_id)
     rs.zadd('battle:%d:users' % battle_id, user_id, 0)
     rs.srem('battle:%d:accepted' % battle_id, user_id)
     create_battle_notification(uid, user_id, battle_id, NTFY_BATTLE_REJECT)
@@ -117,7 +119,7 @@ def battleRejectUser(battle_id, user_id):
 
 def unFollowBattleByUser(battle_id, by_user_id):
     rs.zrem('battle:%d:users' % battle_id, by_user_id)
-    rs.srem('user:%d:battles' % by_user_id, battle_id)
+    rs.zrem('user:%d:battles' % by_user_id, battle_id)
     rs.srem('battle:%d:accepted' % battle_id, by_user_id)
     return rs.zcard('battle:%d:users' % battle_id)
 
