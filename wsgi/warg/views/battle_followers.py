@@ -73,9 +73,9 @@ def battleAcceptUser(battle_id, user_id, admin=False):
 
 
 def followBattleByUser(battle_id, by_user_id):
-    rs.zadd('battle:%d:users' % battle_id, by_user_id, 0)
-    rs.zadd('user:%d:battles' % by_user_id, battle_id, rs.zscore("battles_ids", battle_id))
-    return rs.zcard('battle:%d:users' % battle_id)
+    rs.zadd('battle:%s:users' % battle_id, by_user_id, 0)
+    rs.zadd('user:%s:battles' % by_user_id, battle_id, rs.zscore("battles_ids", battle_id))
+    return rs.zcard('battle:%s:users' % battle_id)
 
 
 @api_route('/battle/<int:battle_id>/unfollow', methods=['POST'])
@@ -85,7 +85,7 @@ def unfollowBattle(battle_id):
     uid = loggedUserUid()
     if uid == 0:
         return -2
-    if rs.hget("battle:%d" % battle_id, "uid") == str(uid):
+    if rs.hget("battle:%s" % battle_id, "uid") == str(uid):
         return -3
     create_battle_notification(uid, 0, battle_id, NTFY_BATTLE_UFLLOW)
     return unFollowBattleByUser(battle_id, uid)
@@ -96,7 +96,7 @@ def battleDelUser(battle_id, user_id):
     if rs.exists("battle:" + str(battle_id)) != 1:
         return -1
     uid = loggedUserUid()
-    if rs.hget("battle:%d" % battle_id, "uid") != str(uid):
+    if rs.hget("battle:%s" % battle_id, "uid") != str(uid):
         return -2
     create_battle_notification(uid, user_id, battle_id, NTFY_BATTLE_KICK)
     return unFollowBattleByUser(battle_id, user_id)
@@ -107,21 +107,21 @@ def battleRejectUser(battle_id, user_id):
     if rs.exists("battle:" + str(battle_id)) != 1:
         return -1
     uid = loggedUserUid()
-    if rs.hget("battle:%d" % battle_id, "uid") != str(uid):
+    if rs.hget("battle:%s" % battle_id, "uid") != str(uid):
         return -2
     if uid == user_id:
         return -3
-    rs.zadd('battle:%d:users' % battle_id, user_id, 0)
-    rs.srem('battle:%d:accepted' % battle_id, user_id)
+    rs.zadd('battle:%s:users' % battle_id, user_id, 0)
+    rs.srem('battle:%s:accepted' % battle_id, user_id)
     create_battle_notification(uid, user_id, battle_id, NTFY_BATTLE_REJECT)
-    return rs.scard('battle:%d:accepted' % battle_id)
+    return rs.scard('battle:%s:accepted' % battle_id)
 
 
 def unFollowBattleByUser(battle_id, by_user_id):
-    rs.zrem('battle:%d:users' % battle_id, by_user_id)
-    rs.zrem('user:%d:battles' % by_user_id, battle_id)
-    rs.srem('battle:%d:accepted' % battle_id, by_user_id)
-    return rs.zcard('battle:%d:users' % battle_id)
+    rs.zrem('battle:%s:users' % battle_id, by_user_id)
+    rs.zrem('user:%s:battles' % by_user_id, battle_id)
+    rs.srem('battle:%s:accepted' % battle_id, by_user_id)
+    return rs.zcard('battle:%s:users' % battle_id)
 
 
 @api_route('/battle/<int:battle_id>/followers', methods=['GET'], jsondump=True)
