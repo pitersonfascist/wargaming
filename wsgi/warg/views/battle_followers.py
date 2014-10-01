@@ -155,7 +155,7 @@ return r1;"""
 
 
 @api_route('/battle/<int:battle_id>/unread')
-def get_unread():
+def get_battle_unread(battle_id):
     if rs.exists("battle:" + str(battle_id)) != 1:
         return -1
     uid = loggedUserUid()
