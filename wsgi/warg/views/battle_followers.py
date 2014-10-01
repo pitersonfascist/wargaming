@@ -53,7 +53,7 @@ def battleAddExternalUser(battle_id, account_id):
             return json.dumps("Error: " + data['error']['message'])
     else:
         uid = rs.hget(wotuid, 'uid')
-    create_battle_notification(loggedUserUid(), uid, battle_id, NTFY_BATTLE_INVITE)
+    create_battle_notification(loggedUserUid(), int(uid), battle_id, NTFY_BATTLE_INVITE)
     return followBattleByUser(battle_id, uid)
 
 

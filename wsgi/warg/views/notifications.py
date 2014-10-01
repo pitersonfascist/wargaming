@@ -39,7 +39,7 @@ def create_battle_notification(from_user, to_user, battle_id, template):
         message = NTFY_BATTLE_REJECT % (battle_date, battle["descr"])
     if rs.sismember("users:virtual", to_user):
         return
-    chid = "chat:message:%s:%d:" % (from_user, to_user)
+    chid = "chat:message:%s:%s:" % (from_user, to_user)
     mid = rs.incr(chid + "counter")
     chid = chid + str(mid)
     score = calendar.timegm(datetime.utcnow().timetuple())
