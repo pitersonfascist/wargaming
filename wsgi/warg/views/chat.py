@@ -139,6 +139,10 @@ def read_message(sid, mid):
         return 0
     rs.hset(chid, "is_read", 'true')
     rs.zrem("chat:user:%d:unread" % uid, chid)
+    battle_id = rs.hget(chid, "battle_id")
+    if battle_id is not None:
+        rs.zrem("battle:%s:unread" % battle_id, chid)
+        rs.delete(chid)
     unread = get_unread._original()
     message = {"type": "unread", "content": {"count": len(unread)}}
     if len(unread) > 0:

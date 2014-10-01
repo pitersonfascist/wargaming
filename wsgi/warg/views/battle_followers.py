@@ -152,3 +152,34 @@ return r1;"""
         u['virtual'] = rows[i + 3]
         users.append(u)
     return users
+
+
+@api_route('/battle/<int:battle_id>/unread')
+def get_unread():
+    if rs.exists("battle:" + str(battle_id)) != 1:
+        return -1
+    uid = loggedUserUid()
+    if rs.hget("battle:%s" % battle_id, "uid") != str(uid):
+        return -2
+    if rs.exists("battle:%s:unread" % battle_id) != 1:
+        return []
+    offset = int(request.args.get("offset", 0))
+    count = int(request.args.get("count", 10))
+    rows = []
+    lua = """local r1 = redis.call('ZREVRANGE', KEYS[1], KEYS[2], KEYS[3]);
+for i = 1, table.getn(r1) do
+  local chid = r1[i]
+  r1[i] = {}
+  r1[i][1] = redis.call('hget', chid, 'id')
+  r1[i][2] = redis.call('hget', chid, 'text')
+  r1[i][3] = redis.call('zscore', KEYS[1], chid)
+  local uid = redis.call('hget', chid, 'rid')
+  r1[i][4] = redis.call('get', 'users:' .. tostring(uid))
+end
+return r1;"""
+    ids = rs.eval(lua, 3, "chat:user:%d:unread" % uid, offset, offset + count - 1)
+    for cmid in ids:
+        cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2])}
+        cmnt['user'] = json.loads(cmid[3])
+        rows.append(cmnt)
+    return rows
