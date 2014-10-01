@@ -27,7 +27,7 @@ def systemInfo():
 return table.getn(r1);"""
     users = rs.eval(lua, 0)
     #users = rs.keys("users:*")
-    battles = rs.scard("battles_ids")
+    battles = rs.zcard("battles_ids")
     #print "SYSTEM: ", os.popen("du -hs " + app.config['UPLOAD_FOLDER']).read().split()[0]
     res = {"disk_usage": getFolderSize(app.config['UPLOAD_FOLDER']), "redis_usage": info['used_memory_human'], "users": users, "battles": battles}
     return res
