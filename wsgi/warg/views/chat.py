@@ -64,7 +64,7 @@ def websocket_api():
                         on_chat_message(uid, evt.get("content"))
                     if evt.get("type") == "read_chat":
                         rm = evt.get("content")
-                        read_message(rm.get('sid'), rm.get('mid'))
+                        read_message._original(rm.get('sid'), rm.get('mid'))
                 except:
                     traceback.print_exc()
                     print "Bad json", message, uid

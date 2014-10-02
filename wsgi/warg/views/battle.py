@@ -145,7 +145,7 @@ def get_battle(battle_id):
     tmp = hashlib.md5(str(mktime(datetime.now().timetuple()))).hexdigest() + "battle_" + str(battle_id)
     zscore = rs.zscore("battles_ids", battle_id)
     if zscore is not None:
-        rs.zadd(tmp, battle_id, zscore)
+        rs.zadd(tmp, battle_id, 10 * zscore)
         res = get_battles_by_set(tmp)
         rs.delete(tmp)
         return {} if len(res) == 0 else res[0]
