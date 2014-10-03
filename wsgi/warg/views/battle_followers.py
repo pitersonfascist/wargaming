@@ -127,7 +127,7 @@ def unFollowBattleByUser(battle_id, by_user_id):
 @api_route('/battle/<int:battle_id>/followers', methods=['GET'], jsondump=True)
 def getBattleFollowers(battle_id):
     if rs.exists("battle:" + str(battle_id)) != 1:
-        return '[]'
+        return []
     offset = request.args.get("offset", 0)
     count = request.args.get("count", 20)
     #rows = rs.sort('battle:' + str(battle_id) + ':users', start=offset, num=count, desc=True, get='users:*')
@@ -177,7 +177,7 @@ for i = 1, table.getn(r1) do
   r1[i][4] = redis.call('get', 'users:' .. tostring(uid))
 end
 return r1;"""
-    ids = rs.eval(lua, 3, "chat:user:%d:unread" % uid, offset, offset + count - 1)
+    ids = rs.eval(lua, 3, "battle:%s:unread" % battle_id, offset, offset + count - 1)
     for cmid in ids:
         cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2])}
         cmnt['user'] = json.loads(cmid[3])
