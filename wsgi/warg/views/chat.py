@@ -42,8 +42,9 @@ def websocket_api():
         participants[str(uid)].add(ws)
         rs.sadd("users_online", uid)
         notify_online_status(uid, True)
+        ntfs = rs.scard("chat:user:%s:ntfy" % uid)
         unread = get_unread._original()
-        if len(unread) > 0:
+        if ntfs > 0 and len(unread) > 0:
             ws.send(json.dumps({"type": "unread", "content": {"count": len(unread), "message": unread[0]}}))
         while True:
             try:
@@ -88,7 +89,7 @@ def notify_online_status(uid, is_online):
     followers = rs.smembers('user:' + str(uid) + ':followers')
     message = json.dumps({"type": "online_status", "content": {"user_id": uid, "online": is_online}})
     for f in followers:
-        send_message_to_user(f, message)
+        send_message_to_user(f, message, '')
 
 
 def on_chat_message(uid, msg):
@@ -102,27 +103,30 @@ def on_chat_message(uid, msg):
     chatm = {"id": mid, "text": msg.get('text'), 'is_read': False, 'sid': uid, 'rid': rid, "type": "chat"}
     rs.hmset(chid, chatm)
     rs.zadd("chat:user:%d:unread" % rid, chid, score)
+    rs.sadd("chat:user:%s:ntfy" % rid, chid)
     dialog = "chat:dialog:%d:%d" % (min(int(uid), rid), max(int(uid), rid))
     rs.zadd(dialog, chid, score)
     rs.zadd("chat:user:%s:dialogs" % uid, dialog, score)
     rs.zadd("chat:user:%d:dialogs" % rid, dialog, score)
     chatm["create_date"] = score
     message = json.dumps({"type": "chat", "content": chatm})
-    send_message_to_user(uid, message)
-    send_message_to_user(rid, message)
+    send_message_to_user(uid, message, chid)
+    send_message_to_user(rid, message, chid)
+    ntfs = rs.scard("chat:user:%s:ntfy" % rid)
     unread = get_unread._original()
     unread_message = ""
-    if len(unread) > 0:
+    if ntfs > 0 and len(unread) > 0:
         unread_message = json.dumps({"type": "unread", "content": {"count": len(unread), "message": unread[0]}})
-        send_message_to_user(rid, unread_message)
+        send_message_to_user(rid, unread_message, '')
 
 
-def send_message_to_user(uid, message):
+def send_message_to_user(uid, message, chid):
     wss = participants.get(str(uid))
     if wss is not None:
         for ws in wss:
             try:
                 ws.send(message)
+                rs.srem("chat:user:%s:ntfy" % uid, chid)
             except:
                 pass
 
@@ -144,11 +148,12 @@ def read_message(sid, mid):
         rs.zrem("battle:%s:unread" % battle_id, chid)
         rs.delete(chid)
     unread = get_unread._original()
+    ntfs = rs.scard("chat:user:%s:ntfy" % uid)
     message = {"type": "unread", "content": {"count": len(unread)}}
-    if len(unread) > 0:
+    if ntfs > 0 and len(unread) > 0:
         message["content"]["message"] = unread[0]
-    send_message_to_user(uid, json.dumps(message))
-    send_message_to_user(sid, json.dumps({"type": "read_chat", "content": {"mid": mid, "rid": int(uid)}}))
+        send_message_to_user(uid, json.dumps(message), '')
+    send_message_to_user(sid, json.dumps({"type": "read_chat", "content": {"mid": mid, "rid": int(uid)}}), '')
     return 1
 
 
