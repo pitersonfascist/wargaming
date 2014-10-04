@@ -132,23 +132,25 @@ def getBattleFollowers(battle_id):
     count = request.args.get("count", 20)
     #rows = rs.sort('battle:' + str(battle_id) + ':users', start=offset, num=count, desc=True, get='users:*')
     lua = """local r1 = redis.call('sort', 'battle:'..tostring(KEYS[1])..':users', 'BY', 'score','DESC', 'LIMIT', KEYS[3], KEYS[4],
-    'GET', 'users:*', 'GET', '#', 'GET', '#', 'GET', '#');
+    'GET', 'users:*', 'GET', '#', 'GET', '#', 'GET', '#', 'GET', '#');
 for i = 1, table.getn(r1) do
-  if i % 4 == 1 then
+  if i % 5 == 1 then
     r1[i+1] = redis.call('sismember', 'user:' .. tostring(r1[i+1]) .. ':followers', KEYS[2])
     r1[i+2] = redis.call('sismember', 'battle:' .. tostring(KEYS[1]) .. ':accepted', r1[i+3])
     r1[i+3] = redis.call('sismember', 'users:virtual', r1[i+3])
+    r1[i+4] = redis.call('sismember', 'users_online', r1[i+4])
   end
 end
 return r1;"""
     rows = rs.eval(lua, 4, battle_id, loggedUserUid(), offset, count)
     users = []
     for i in range(0, len(rows) - 1):
-        if i % 4 != 0 or rows[i] is None:
+        if i % 5 != 0 or rows[i] is None:
             continue
         u = json.loads(rows[i])
         u['is_follow'] = rows[i + 1]
         u['is_accepted'] = rows[i + 2]
+        u['is_online'] = rows[i + 4]
         u['virtual'] = rows[i + 3]
         users.append(u)
     return users
@@ -175,11 +177,13 @@ for i = 1, table.getn(r1) do
   r1[i][3] = redis.call('zscore', KEYS[1], chid)
   local uid = redis.call('hget', chid, 'rid')
   r1[i][4] = redis.call('get', 'users:' .. tostring(uid))
+  r1[i][5] = redis.call('sismember', 'users_online', uid)
 end
 return r1;"""
     ids = rs.eval(lua, 3, "battle:%s:unread" % battle_id, offset, offset + count - 1)
     for cmid in ids:
         cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2])}
         cmnt['user'] = json.loads(cmid[3])
+        cmnt['user']['is_online'] = cmid[4]
         rows.append(cmnt)
     return rows
