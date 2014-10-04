@@ -25,6 +25,27 @@ def followUser(user_id):
     return followUserByUser(user_id, str(uid))
 
 
+@api_route('/register/<int:account_id>/follow', methods=['POST', 'PUT'])
+def followExternalUser(battle_id, account_id):
+    uid = loggedUserUid()
+    if uid == 0:
+        return -2
+    access_token = request.args.get("access_token", None)
+    if access_token is None:
+        return json.dumps("No access token")
+    wotuid = 'wot_user:%d' % account_id
+    if rs.exists(wotuid) != 1:
+        from warg.views.users import insert_wot_user, account_info
+        data = account_info(access_token, account_id)
+        if data['status'] == 'ok':
+            user_id = insert_wot_user(data['data'][str(account_id)], 1)
+        else:
+            return json.dumps("Error: " + data['error']['message'])
+    else:
+        user_id = rs.hget(wotuid, 'uid')
+    return followUserByUser(user_id, str(uid))
+
+
 def followUserByUser(user_id, by_user_id):
     rs.sadd('user:%s:following' % by_user_id, user_id)
     rs.sadd('user:%d:followers' % user_id, by_user_id)
