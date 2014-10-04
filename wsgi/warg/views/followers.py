@@ -26,7 +26,7 @@ def followUser(user_id):
 
 
 @api_route('/register/<int:account_id>/follow', methods=['POST', 'PUT'])
-def followExternalUser(battle_id, account_id):
+def followExternalUser(account_id):
     uid = loggedUserUid()
     if uid == 0:
         return -2
