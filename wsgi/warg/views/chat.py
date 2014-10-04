@@ -46,6 +46,7 @@ def websocket_api():
         unread = get_unread._original()
         if ntfs > 0 and len(unread) > 0:
             ws.send(json.dumps({"type": "unread", "content": {"count": len(unread), "message": unread[0]}}))
+            rs.delete("chat:user:%s:ntfy" % uid)
         while True:
             try:
                 message = ws.receive()
@@ -126,7 +127,7 @@ def send_message_to_user(uid, message, chid):
         for ws in wss:
             try:
                 ws.send(message)
-                rs.srem("chat:user:%s:ntfy" % uid, chid)
+                rs.delete("chat:user:%s:ntfy" % uid)
             except:
                 pass
 

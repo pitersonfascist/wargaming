@@ -54,7 +54,7 @@ def battleAddExternalUser(battle_id, account_id):
     else:
         uid = rs.hget(wotuid, 'uid')
     create_battle_notification(loggedUserUid(), int(uid), battle_id, NTFY_BATTLE_INVITE)
-    return followBattleByUser(battle_id, uid)
+    return battleAcceptUser._original(battle_id, uid)
 
 
 @api_route('/battle/<int:battle_id>/accept/<int:user_id>', methods=['POST', 'PUT'])
