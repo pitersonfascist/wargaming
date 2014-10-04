@@ -157,6 +157,14 @@ def read_message(sid, mid):
     return 1
 
 
+@api_route('/chat/unread/count')
+def get_unread_count():
+    uid = loggedUserUid()
+    if uid == 0:
+        return -2
+    return rs.zcard("chat:user:%d:unread" % uid)
+
+
 @api_route('/chat/unread')
 def get_unread():
     uid = loggedUserUid()
