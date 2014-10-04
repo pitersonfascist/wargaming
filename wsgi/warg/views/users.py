@@ -152,6 +152,7 @@ def detail(user_id):
         u = json.loads(rs.get("users:" + str(user_id)))
         u['soc_links'] = list(rs.smembers('user_soc_links:' + str(user_id)))
         u['is_online'] = int(rs.sismember('users_online', user_id))
+        u['is_follow'] = int(rs.sismember('user:%s:followers' % user_id, loggedUserUid()))
         u['virtual'] = int(rs.sismember('users:virtual', user_id))
         #u = json.dumps(u)
     return u or {}
