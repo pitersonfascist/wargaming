@@ -171,6 +171,10 @@ def get_unread():
     uid = loggedUserUid()
     if uid == 0:
         return -2
+    return get_user_unread(uid)
+
+
+def get_user_unread(uid):
     if rs.exists("chat:user:%d:unread" % uid) != 1:
         return []
     offset = int(request.args.get("offset", 0))

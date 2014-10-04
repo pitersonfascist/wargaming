@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from warg.views.battle import get_battle
 from warg.views.users import detail as user_datail
-from warg.views.chat import send_message_to_user, get_unread
+from warg.views.chat import send_message_to_user, get_user_unread
 from datetime import datetime
 import calendar
 from warg.views import rs
@@ -49,7 +49,7 @@ def create_battle_notification(from_user, to_user, battle_id, template):
     rs.sadd("chat:user:%s:ntfy" % to_user, chid)
     rs.zadd("battle:%s:unread" % battle_id, chid, score)
     ucount = rs.zcard("chat:user:%s:unread" % to_user)
-    print "ntfy:", ucount, ucount > 0, chatm
-    if ucount > 0:
-        unread_message = json.dumps({"type": "unread", "content": {"count": ucount, "message": chatm}})
+    unread = get_user_unread(to_user)
+    if len(unread) > 0:
+        unread_message = json.dumps({"type": "unread", "content": {"count": ucount, "message": unread[0]}})
         send_message_to_user(to_user, unread_message, chid)
