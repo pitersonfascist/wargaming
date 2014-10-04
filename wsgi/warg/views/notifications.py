@@ -48,7 +48,7 @@ def create_battle_notification(from_user, to_user, battle_id, template):
     rs.zadd("chat:user:%s:unread" % to_user, chid, score)
     rs.sadd("chat:user:%s:ntfy" % to_user, chid)
     rs.zadd("battle:%s:unread" % battle_id, chid, score)
-    unread = get_unread._original()
-    if len(unread) > 0:
-        unread_message = json.dumps({"type": "unread", "content": {"count": len(unread), "message": unread[0]}})
+    ucount = rs.zcard("chat:user:%s:unread" % to_user)
+    if ucount > 0:
+        unread_message = json.dumps({"type": "unread", "content": {"count": ucount, "message": chatm}})
         send_message_to_user(to_user, unread_message, chid)
