@@ -64,12 +64,12 @@ def battleAcceptUser(battle_id, user_id, admin=False):
     uid = loggedUserUid()
     if rs.hget("battle:%d" % battle_id, "uid") != str(uid) and not admin:
         return -2
-    rs.zadd('battle:%d:users' % battle_id, user_id, 1)
-    rs.sadd('battle:%d:accepted' % battle_id, user_id)
-    rs.zadd('user:%d:battles' % user_id, battle_id, rs.zscore("battles_ids", battle_id))
+    rs.zadd('battle:%s:users' % battle_id, user_id, 1)
+    rs.sadd('battle:%s:accepted' % battle_id, user_id)
+    rs.zadd('user:%s:battles' % user_id, battle_id, rs.zscore("battles_ids", battle_id))
     if uid != user_id:
         create_battle_notification(loggedUserUid(), user_id, battle_id, NTFY_BATTLE_ACCEPT)
-    return rs.scard('battle:%d:accepted' % battle_id)
+    return rs.scard('battle:%s:accepted' % battle_id)
 
 
 def followBattleByUser(battle_id, by_user_id):
