@@ -212,10 +212,11 @@ for i = 1, table.getn(r1) do
   r1[i][2] = redis.call('get', 'users:' .. uid);
   r1[i][3] = redis.call('sismember', 'users_online', uid);
 --    r1[i+3] = redis.call('smembers', 'battle:' .. tostring(r1[i+3]) .. ':tanks')
-  r1[i][4] = redis.call('sismember', 'battle:' .. bid .. ':accepted', tostring(KEYS[3]))
+  r1[i][4] = redis.call('sismember', 'battle:' .. bid .. ':accepted', KEYS[3])
   r1[i][5] = redis.call('zrank', 'battle:' .. bid .. ':users', KEYS[3])
   r1[i][6] = redis.call('scard', 'battle:' .. bid .. ':accepted')
   r1[i][7] = redis.call('zcard', 'battle:' .. bid .. ':users')
+  r1[i][8] = redis.call('sismember', 'battle:' .. bid .. ':invited', KEYS[3])
 end
 return r1;"""
     #
@@ -227,6 +228,7 @@ return r1;"""
         l['user']['is_online'] = b[2]
         l['tanks'] = []  # rows[i + 3]
         l['is_accepted'] = b[3]
+        l['is_invited'] = b[7]
         l['is_follow'] = 1 if b[4] >= 0 else 0
         l['accepted'] = b[5]
         l['followers'] = b[6]
