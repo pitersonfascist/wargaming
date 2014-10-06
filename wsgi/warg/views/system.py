@@ -25,7 +25,7 @@ def systemInfo():
     info = rs.info()
     lua = """local r1 = redis.call('keys', 'users:*');
 return table.getn(r1);"""
-    users = rs.eval(lua, 0)
+    users = rs.eval(lua, 0) - rs.scard("users:virtual")
     #users = rs.keys("users:*")
     battles = rs.zcard("battles_ids")
     #print "SYSTEM: ", os.popen("du -hs " + app.config['UPLOAD_FOLDER']).read().split()[0]
