@@ -50,15 +50,15 @@ def create_battle():
 
 
 def process_battle_db(bid, uid, bdata, tanks):
-    rs.hmset("battle:%d" % bid, {'data': json.dumps(bdata), 'id': bid, 'uid': uid, 'battle_date': bdata['battle_date'], 'type': bdata['type'], 'privacy': bdata['privacy']})
+    rs.hmset("battle:%s" % bid, {'data': json.dumps(bdata), 'id': bid, 'uid': uid, 'battle_date': bdata['battle_date'], 'type': bdata['type'], 'privacy': bdata['privacy']})
     rs.zadd("battles:%s" % bdata['type'], bid, bdata['battle_date'])
     rs.zadd("user_battles:" + str(uid), bid, bdata['battle_date'])
     rs.zadd("battles_ids", bid, bdata['battle_date'])
     rs.zadd("privacy:%s" % bdata['privacy'], bid, bdata['battle_date'])
     if tanks is not None:
         for tank_id in tanks:
-            rs.sadd("tank:%d:battles" % tank_id, bid)
-            rs.sadd("battle:%d:tanks" % bid, tank_id)
+            rs.sadd("tank:%s:battles" % tank_id, bid)
+            rs.sadd("battle:%s:tanks" % bid, tank_id)
 
 
 @api_route('/battle/<int:battle_id>/update', methods=['POST'])
@@ -66,14 +66,14 @@ def update_battle(battle_id):
     uid = loggedUserUid()
     if uid == 0:
         return -2
-    if str(uid) != rs.hget("battle:%d" % battle_id, 'uid'):
+    if str(uid) != rs.hget("battle:%s" % battle_id, 'uid'):
         return -1
     try:
         data = json.loads(request.stream.read())
     except:
         return -3
 
-    battle = json.loads(rs.hget("battle:%d" % battle_id, 'data'))
+    battle = json.loads(rs.hget("battle:%s" % battle_id, 'data'))
     battle_old = battle.copy()
 
     fulldata = True
@@ -93,13 +93,13 @@ def update_battle(battle_id):
     if battle_old['privacy'] != data['privacy']:
         rs.zrem("privacy:%s" % battle_old['privacy'], battle_id)
 
-    tanks = rs.smembers("battle:%d:tanks" % battle_id)
+    tanks = rs.smembers("battle:%s:tanks" % battle_id)
     for tank_id in tanks:
         rs.srem("tank:%s:battles" % tank_id, battle_id)
-    rs.delete("battle:%d:tanks" % battle_id)
+    rs.delete("battle:%s:tanks" % battle_id)
 
     process_battle_db(battle_id, uid, battle, data.get("tanks", None))
-    users = rs.zrange('battle:%d:users' % battle_id, 0, -1)
+    users = rs.zrange('battle:%s:users' % battle_id, 0, -1)
     for user_id in users:
         rs.zadd('user:%s:battles' % user_id, battle_id, battle['battle_date'])
     #from uhelp.views.full_text import storeLookInIndex
@@ -110,25 +110,25 @@ def update_battle(battle_id):
 
 @api_route('/battle/<int:battle_id>/delete', methods=['POST'])
 def delete_battle(battle_id, admin=0):
-    if rs.exists("battle:%d" % battle_id) == 1 and (admin == 1 or str(loggedUserUid()) == rs.hget("battle:%d" % battle_id, 'uid')):
-        uid = rs.hget("battle:%d" % battle_id, 'uid')
+    if rs.exists("battle:%s" % battle_id) == 1 and (admin == 1 or str(loggedUserUid()) == rs.hget("battle:%s" % battle_id, 'uid')):
+        uid = rs.hget("battle:%s" % battle_id, 'uid')
         rs.zrem("user_battles:" + uid, battle_id)
         rs.zrem("battles_ids", battle_id)
-        battle = json.loads(rs.hget("battle:%d" % battle_id, 'data'))
+        battle = json.loads(rs.hget("battle:%s" % battle_id, 'data'))
         rs.zrem("battles:%s" % battle['type'], battle_id)
         rs.zrem("privacy:%s" % battle['privacy'], battle_id)
-        tanks = rs.smembers("battle:%d:tanks" % battle_id)
+        tanks = rs.smembers("battle:%s:tanks" % battle_id)
         for tank_id in tanks:
             rs.srem("tank:%s:battles" % tank_id, battle_id)
-        users = rs.zrange('battle:%d:users' % battle_id, 0, -1)
+        users = rs.zrange('battle:%s:users' % battle_id, 0, -1)
         from warg.views.battle_followers import unFollowBattleByUser
         from warg.views.notifications import create_battle_notification, NTFY_BATTLE_KICK
         for user_id in users:
             unFollowBattleByUser(battle_id, int(user_id))
             if user_id != uid:
                 create_battle_notification(uid, user_id, battle_id, NTFY_BATTLE_KICK)
-        rs.delete("battle:%d:tanks" % battle_id)
-        rs.delete("battle:%d" % battle_id)
+        rs.delete("battle:%s:tanks" % battle_id)
+        rs.delete("battle:%s" % battle_id)
         rs.sadd("whoosh:battles:deleted", battle_id)
         return 1
     return 0
@@ -155,7 +155,7 @@ def get_battle(battle_id):
 
 @api_route('/user/<int:user_id>/battles', methods=['GET'])
 def get_user_battles(user_id):
-    return get_battles_by_set("user_battles:%d" % user_id)
+    return get_battles_by_set("user_battles:%s" % user_id)
 
 
 @api_route('/battles/all', methods=['GET'])
@@ -176,9 +176,9 @@ redis.call('zinterstore', KEYS[1], 2, KEYS[1], 'privacy:PRIVATE', 'AGGREGATE', '
 redis.call('zunionstore', KEYS[1], 4, KEYS[1], 'user:'..tostring(KEYS[2])..':battles','privacy:ALL', 'user_battles:'..tostring(KEYS[2]), 'AGGREGATE', 'MIN');
 return 1;"""
     tmp = hashlib.md5(str(mktime(datetime.now().timetuple()))).hexdigest() + "allowed_battle_" + str(uid)
-    #rs.sort('user:%d:followers' % uid, get=["user:*->battles"], store=tmp)
+    #rs.sort('user:%s:followers' % uid, get=["user:*->battles"], store=tmp)
     #rs.zinterstore(tmp, tmp, "privacy:PRIVATE", aggregate="MIN")
-    #rs.zinterstore(tmp, tmp, 'user:%d:battles' % uid, "privacy:ALL", "user_battles:%d" % uid, aggregate="MIN")
+    #rs.zinterstore(tmp, tmp, 'user:%s:battles' % uid, "privacy:ALL", "user_battles:%s" % uid, aggregate="MIN")
     rs.eval(lua, 2, tmp, uid)
     res = get_battles_by_set(tmp)
     rs.delete(tmp)
@@ -190,12 +190,12 @@ def get_followed_battles():
     uid = loggedUserUid()
     if uid == 0:
         return []
-    return get_battles_by_set("user:%d:battles" % uid)
+    return get_battles_by_set("user:%s:battles" % uid)
 
 
 @api_route('/battle/<int:battle_id>/tanks', methods=['GET'], jsondump=False)
 def get_battle_tanks(battle_id):
-    tanks = rs.sort("battle:%d:tanks" % battle_id, get='tank:*')
+    tanks = rs.sort("battle:%s:tanks" % battle_id, get='tank:*')
     return "[" + ",".join(tanks) + "]"
 
 

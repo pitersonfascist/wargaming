@@ -94,7 +94,7 @@ def insert_wot_user(profile, virtual=0):
     from warg.views.followers import followUserByUser
     if profile['private'] is not None:
         for fid in profile['private']['friends']:
-            wotfid = 'wot_user:%d' % fid
+            wotfid = 'wot_user:%s' % fid
             if rs.exists(wotfid) == 1:
                 followUserByUser(rs.hget(wotfid, 'uid'), str(uid))
     rs.set("users:" + str(uid), json.dumps(user_data))

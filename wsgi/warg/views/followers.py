@@ -33,7 +33,7 @@ def followExternalUser(account_id):
     access_token = request.args.get("access_token", None)
     if access_token is None:
         return json.dumps("No access token")
-    wotuid = 'wot_user:%d' % account_id
+    wotuid = 'wot_user:%s' % account_id
     if rs.exists(wotuid) != 1:
         from warg.views.users import insert_wot_user, account_info
         data = account_info(access_token, account_id)
@@ -48,10 +48,10 @@ def followExternalUser(account_id):
 
 def followUserByUser(user_id, by_user_id):
     rs.sadd('user:%s:following' % by_user_id, user_id)
-    rs.sadd('user:%d:followers' % user_id, by_user_id)
+    rs.sadd('user:%s:followers' % user_id, by_user_id)
     rs.sunionstore('user:%s:follownig_looks' % by_user_id, 'user:%s:follownig_looks' % by_user_id, 'user_looks:' + str(user_id))
 
-    return rs.scard('user:%d:followers' % user_id)
+    return rs.scard('user:%s:followers' % user_id)
 
 
 #('/user/<int:user_id>/follow', methods=['DELETE'])
@@ -64,10 +64,10 @@ def unfollowUser(user_id):
         return -2
 
     rs.srem('user:%s:following' % uid, user_id)
-    rs.srem('user:%d:followers' % user_id, uid)
+    rs.srem('user:%s:followers' % user_id, uid)
     rs.sdiffstore('user:%s:follownig_looks' % uid, 'user:%s:follownig_looks' % uid, 'user_looks:' + str(user_id))
 
-    return rs.scard('user:%d:followers' % user_id)
+    return rs.scard('user:%s:followers' % user_id)
 
 
 @api_route('/user/<int:user_id>/following', methods=['GET'], jsondump=True)

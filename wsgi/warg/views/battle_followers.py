@@ -28,7 +28,7 @@ def battleFollowUser(battle_id):
 def battleAddUser(battle_id, user_id):
     if rs.exists("battle:" + str(battle_id)) != 1:
         return -1
-    if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
+    if rs.hget("battle:%s" % battle_id, "uid") != str(loggedUserUid()):
         return -2
     create_battle_notification(loggedUserUid(), user_id, battle_id, NTFY_BATTLE_INVITE)
     return followBattleByUser(battle_id, user_id)
@@ -38,12 +38,12 @@ def battleAddUser(battle_id, user_id):
 def battleAddExternalUser(battle_id, account_id):
     if rs.exists("battle:" + str(battle_id)) != 1:
         return -1
-    if rs.hget("battle:%d" % battle_id, "uid") != str(loggedUserUid()):
+    if rs.hget("battle:%s" % battle_id, "uid") != str(loggedUserUid()):
         return -2
     access_token = request.args.get("access_token", None)
     if access_token is None:
         return json.dumps("No access token")
-    wotuid = 'wot_user:%d' % account_id
+    wotuid = 'wot_user:%s' % account_id
     if rs.exists(wotuid) != 1:
         from warg.views.users import insert_wot_user, account_info
         data = account_info(access_token, account_id)
@@ -62,7 +62,7 @@ def battleAcceptUser(battle_id, user_id, admin=False):
     if rs.exists("battle:" + str(battle_id)) != 1:
         return -1
     uid = loggedUserUid()
-    if rs.hget("battle:%d" % battle_id, "uid") != str(uid) and not admin:
+    if rs.hget("battle:%s" % battle_id, "uid") != str(uid) and not admin:
         return -2
     rs.zadd('battle:%s:users' % battle_id, user_id, 1)
     rs.sadd('battle:%s:accepted' % battle_id, user_id)

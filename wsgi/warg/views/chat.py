@@ -97,18 +97,18 @@ def on_chat_message(uid, msg):
     rid = int(msg.get('rid', 0))
     if rid == 0 or len(msg.get('text', "")) == 0:
         return
-    chid = "chat:message:%s:%d:" % (uid, rid)
+    chid = "chat:message:%s:%s:" % (uid, rid)
     mid = rs.incr(chid + "counter")
     chid = chid + str(mid)
     score = calendar.timegm(datetime.utcnow().timetuple())
     chatm = {"id": mid, "text": msg.get('text'), 'is_read': False, 'sid': uid, 'rid': rid, "type": "chat"}
     rs.hmset(chid, chatm)
-    rs.zadd("chat:user:%d:unread" % rid, chid, score)
+    rs.zadd("chat:user:%s:unread" % rid, chid, score)
     rs.sadd("chat:user:%s:ntfy" % rid, chid)
-    dialog = "chat:dialog:%d:%d" % (min(int(uid), rid), max(int(uid), rid))
+    dialog = "chat:dialog:%s:%s" % (min(int(uid), rid), max(int(uid), rid))
     rs.zadd(dialog, chid, score)
     rs.zadd("chat:user:%s:dialogs" % uid, dialog, score)
-    rs.zadd("chat:user:%d:dialogs" % rid, dialog, score)
+    rs.zadd("chat:user:%s:dialogs" % rid, dialog, score)
     chatm["create_date"] = score
     message = json.dumps({"type": "chat", "content": chatm})
     send_message_to_user(uid, message, chid)
@@ -137,13 +137,13 @@ def read_message(sid, mid):
     uid = loggedUserUid()
     if uid == 0:
         return -2
-    chid = "chat:message:%d:%d:%d" % (sid, uid, mid)
+    chid = "chat:message:%s:%s:%s" % (sid, uid, mid)
     if rs.exists(chid) != 1:
         return -1
     if rs.hget(chid, "is_read") == "true":
         return 0
     rs.hset(chid, "is_read", 'true')
-    rs.zrem("chat:user:%d:unread" % uid, chid)
+    rs.zrem("chat:user:%s:unread" % uid, chid)
     battle_id = rs.hget(chid, "battle_id")
     if battle_id is not None:
         rs.zrem("battle:%s:unread" % battle_id, chid)
@@ -163,7 +163,7 @@ def get_unread_count():
     uid = loggedUserUid()
     if uid == 0:
         return -2
-    return rs.zcard("chat:user:%d:unread" % uid)
+    return rs.zcard("chat:user:%s:unread" % uid)
 
 
 @api_route('/chat/unread')
@@ -175,7 +175,7 @@ def get_unread():
 
 
 def get_user_unread(uid):
-    if rs.exists("chat:user:%d:unread" % uid) != 1:
+    if rs.exists("chat:user:%s:unread" % uid) != 1:
         return []
     offset = int(request.args.get("offset", 0))
     count = int(request.args.get("count", 10))
@@ -194,7 +194,7 @@ for i = 1, table.getn(r1) do
   r1[i][6] = redis.call('sismember', 'users_online', uid)
 end
 return r1;"""
-    ids = rs.eval(lua, 3, "chat:user:%d:unread" % uid, offset, offset + count - 1)
+    ids = rs.eval(lua, 3, "chat:user:%s:unread" % uid, offset, offset + count - 1)
     #ids = rs.sort('look:' + str(look_id) + ':comments', start=offset, num=count, get='#')
     for cmid in ids:
         cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), "type": cmid[4]}
@@ -211,7 +211,7 @@ def get_dialogs():
     uid = loggedUserUid()
     if uid == 0:
         return []
-    if rs.exists("chat:user:%d:dialogs" % uid) != 1:
+    if rs.exists("chat:user:%s:dialogs" % uid) != 1:
         return []
     offset = int(request.args.get("offset", 0))
     count = int(request.args.get("count", 10))
@@ -232,7 +232,7 @@ for i = 1, table.getn(r1) do
   r1[i][7] = redis.call('hget', chid, 'is_read')
 end
 return r1;"""
-    ids = rs.eval(lua, 3, "chat:user:%d:dialogs" % uid, offset, offset + count - 1)
+    ids = rs.eval(lua, 3, "chat:user:%s:dialogs" % uid, offset, offset + count - 1)
     #ids = rs.sort('look:' + str(look_id) + ':comments', start=offset, num=count, get='#')
     for cmid in ids:
         cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), 'is_read': json.loads(cmid[6])}
@@ -248,7 +248,7 @@ def get_chat_history(sid):
     uid = loggedUserUid()
     if uid == 0:
         return []
-    dialog = "chat:dialog:%d:%d" % (min(int(uid), sid), max(int(uid), sid))
+    dialog = "chat:dialog:%s:%s" % (min(int(uid), sid), max(int(uid), sid))
     if rs.exists(dialog) != 1:
         return []
     offset = int(request.args.get("offset", 0))
