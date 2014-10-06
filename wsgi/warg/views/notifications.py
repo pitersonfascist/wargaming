@@ -14,6 +14,8 @@ NTFY_BATTLE_UFLLOW = u"%s отозвал заявку на бой %s %s"
 NTFY_BATTLE_KICK   = u"%s отменил Ваше участие в бою %s %s"
 NTFY_BATTLE_ACCEPT = u"Заявка принята. %s %s"
 NTFY_BATTLE_REJECT = u"Заявка не принята. %s %s"
+NTFY_INVITE_ACCEPT = u"%s готов к бою %s %s"
+NTFY_INVITE_REJECT = u"%s отказался от боя %s %s"
 #NTFY_USER_FOLLOW   = u"%s добавил Вас в избранное"
 
 
@@ -37,6 +39,14 @@ def create_battle_notification(from_user, to_user, battle_id, template):
         message = NTFY_BATTLE_ACCEPT % (battle_date, battle["descr"])
     if template == NTFY_BATTLE_REJECT:
         message = NTFY_BATTLE_REJECT % (battle_date, battle["descr"])
+    if template == NTFY_INVITE_ACCEPT:
+        usr = user_datail._original(from_user)
+        to_user = battle['user']["id"]
+        message = NTFY_INVITE_ACCEPT % (usr["nickname"], battle_date, battle["descr"])
+    if template == NTFY_INVITE_REJECT:
+        usr = user_datail._original(from_user)
+        to_user = battle['user']["id"]
+        message = NTFY_INVITE_REJECT % (usr["nickname"], battle_date, battle["descr"])
     if rs.sismember("users:virtual", to_user):
         return
     chid = "chat:message:%s:%s:" % (from_user, to_user)

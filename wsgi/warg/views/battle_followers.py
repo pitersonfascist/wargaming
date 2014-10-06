@@ -20,8 +20,16 @@ def battleFollowUser(battle_id):
     uid = loggedUserUid()
     if uid == 0:
         return -2
-    create_battle_notification(uid, 0, battle_id, NTFY_BATTLE_FOLLOW)
-    return followBattleByUser(battle_id, uid)
+    if rs.sismember('battle:%s:invited' % battle_id, uid):
+        create_battle_notification(uid, 0, battle_id, NTFY_INVITE_ACCEPT)
+        rs.srem('battle:%s:invited' % battle_id, uid)
+        rs.zadd('battle:%s:users' % battle_id, uid, 1)
+        rs.sadd('battle:%s:accepted' % battle_id, uid)
+        rs.zadd('user:%s:battles' % uid, battle_id, rs.zscore("battles_ids", battle_id))
+        return 1
+    else:
+        create_battle_notification(uid, 0, battle_id, NTFY_BATTLE_FOLLOW)
+        return followBattleByUser(battle_id, uid)
 
 
 @api_route('/battle/<int:battle_id>/follow/<int:user_id>', methods=['POST', 'PUT'])
@@ -30,6 +38,7 @@ def battleAddUser(battle_id, user_id):
         return -1
     if rs.hget("battle:%s" % battle_id, "uid") != str(loggedUserUid()):
         return -2
+    rs.sadd('battle:%s:invited' % battle_id, user_id)
     create_battle_notification(loggedUserUid(), user_id, battle_id, NTFY_BATTLE_INVITE)
     return followBattleByUser(battle_id, user_id)
 
@@ -54,7 +63,8 @@ def battleAddExternalUser(battle_id, account_id):
     else:
         uid = rs.hget(wotuid, 'uid')
     create_battle_notification(loggedUserUid(), int(uid), battle_id, NTFY_BATTLE_INVITE)
-    return battleAcceptUser._original(battle_id, uid)
+    rs.sadd('battle:%s:invited' % battle_id, uid)
+    return followBattleByUser(battle_id, uid)
 
 
 @api_route('/battle/<int:battle_id>/accept/<int:user_id>', methods=['POST', 'PUT'])
@@ -87,7 +97,10 @@ def unfollowBattle(battle_id):
         return -2
     if rs.hget("battle:%s" % battle_id, "uid") == str(uid):
         return -3
-    create_battle_notification(uid, 0, battle_id, NTFY_BATTLE_UFLLOW)
+    if rs.sismember('battle:%s:invited' % battle_id, uid):
+        create_battle_notification(uid, 0, battle_id, NTFY_INVITE_REJECT)
+    else:
+        create_battle_notification(uid, 0, battle_id, NTFY_BATTLE_UFLLOW)
     return unFollowBattleByUser(battle_id, uid)
 
 
@@ -121,6 +134,7 @@ def unFollowBattleByUser(battle_id, by_user_id):
     rs.zrem('battle:%s:users' % battle_id, by_user_id)
     rs.zrem('user:%s:battles' % by_user_id, battle_id)
     rs.srem('battle:%s:accepted' % battle_id, by_user_id)
+    rs.srem('battle:%s:invited' % battle_id, by_user_id)
     return rs.zcard('battle:%s:users' % battle_id)
 
 
@@ -132,26 +146,28 @@ def getBattleFollowers(battle_id):
     count = request.args.get("count", 20)
     #rows = rs.sort('battle:' + str(battle_id) + ':users', start=offset, num=count, desc=True, get='users:*')
     lua = """local r1 = redis.call('sort', 'battle:'..tostring(KEYS[1])..':users', 'BY', 'score','DESC', 'LIMIT', KEYS[3], KEYS[4],
-    'GET', 'users:*', 'GET', '#', 'GET', '#', 'GET', '#', 'GET', '#');
+    'GET', 'users:*', 'GET', '#', 'GET', '#', 'GET', '#', 'GET', '#', 'GET', '#');
 for i = 1, table.getn(r1) do
-  if i % 5 == 1 then
+  if i % 6 == 1 then
     r1[i+1] = redis.call('sismember', 'user:' .. tostring(r1[i+1]) .. ':followers', KEYS[2])
     r1[i+2] = redis.call('sismember', 'battle:' .. tostring(KEYS[1]) .. ':accepted', r1[i+3])
     r1[i+3] = redis.call('sismember', 'users:virtual', r1[i+3])
     r1[i+4] = redis.call('sismember', 'users_online', r1[i+4])
+    r1[i+5] = redis.call('sismember', 'battle:' .. tostring(KEYS[1]) .. ':invited', r1[i+5])
   end
 end
 return r1;"""
     rows = rs.eval(lua, 4, battle_id, loggedUserUid(), offset, count)
     users = []
     for i in range(0, len(rows) - 1):
-        if i % 5 != 0 or rows[i] is None:
+        if i % 6 != 0 or rows[i] is None:
             continue
         u = json.loads(rows[i])
         u['is_follow'] = rows[i + 1]
         u['is_accepted'] = rows[i + 2]
         u['is_online'] = rows[i + 4]
         u['virtual'] = rows[i + 3]
+        u['is_invited'] = rows[i + 5]
         users.append(u)
     return users
 
