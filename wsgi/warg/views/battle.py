@@ -228,6 +228,7 @@ for i = 1, table.getn(r1) do
   r1[i][6] = redis.call('scard', 'battle:' .. bid .. ':accepted')
   r1[i][7] = redis.call('zcard', 'battle:' .. bid .. ':users')
   r1[i][8] = redis.call('sismember', 'battle:' .. bid .. ':invited', KEYS[3])
+  r1[i][9] = redis.call('smembers', 'battle:' .. bid .. ':reminders')
 end
 return r1;"""
     #
@@ -238,6 +239,7 @@ return r1;"""
         l['user'] = json.loads(b[1])
         l['user']['is_online'] = b[2]
         l['tanks'] = []  # rows[i + 3]
+        l['reminders'] = b[8]
         l['is_accepted'] = b[3]
         l['is_invited'] = b[7]
         l['is_follow'] = 1 if b[4] >= 0 else 0
