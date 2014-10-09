@@ -36,7 +36,8 @@ def init_battle_reminders(battle_id, bdate):
     for remmin in remitems:
         #remmin = int(remmin)
         delta = timedelta(minutes=int(remmin))
-        date = datetime.now() - delta
+        date = datetime.fromtimestamp(bdate) - delta
+        print "battle", battle_id, "remind", remmin, datetime.fromtimestamp(bdate), date
         if int(calendar.timegm(datetime.now().timetuple())) <= int(calendar.timegm(date.timetuple())):
             reminders["battle:%s:job:%s" % (battle_id, remmin)] = sched.add_date_job(send_battle_reminder, date, args=[battle_id, delta])
 
