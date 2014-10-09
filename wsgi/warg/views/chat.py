@@ -235,7 +235,8 @@ return r1;"""
     ids = rs.eval(lua, 3, "chat:user:%s:dialogs" % uid, offset, offset + count - 1)
     #ids = rs.sort('look:' + str(look_id) + ':comments', start=offset, num=count, get='#')
     for cmid in ids:
-        cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), 'is_read': json.loads(cmid[6])}
+        is_read = False if cmid[6] == 'False' else json.loads(cmid[6])
+        cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), 'is_read': is_read}
         cmnt['user'] = json.loads(cmid[3])
         cmnt['user']['is_online'] = cmid[5]
         cmnt['companion'] = json.loads(cmid[3]) if uid != cmnt['user']['id'] else json.loads(cmid[4])
