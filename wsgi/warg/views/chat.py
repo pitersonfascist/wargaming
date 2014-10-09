@@ -101,7 +101,7 @@ def on_chat_message(uid, msg):
     mid = rs.incr(chid + "counter")
     chid = chid + str(mid)
     score = calendar.timegm(datetime.utcnow().timetuple())
-    chatm = {"id": mid, "text": msg.get('text'), 'is_read': False, 'sid': uid, 'rid': rid, "type": "chat"}
+    chatm = {"id": mid, "text": msg.get('text'), 'is_read': 'false', 'sid': uid, 'rid': rid, "type": "chat"}
     rs.hmset(chid, chatm)
     rs.zadd("chat:user:%s:unread" % rid, chid, score)
     rs.sadd("chat:user:%s:ntfy" % rid, chid)
@@ -269,7 +269,8 @@ return r1;"""
     ids = rs.eval(lua, 3, dialog, offset, offset + count - 1)
     #ids = rs.sort('look:' + str(look_id) + ':comments', start=offset, num=count, get='#')
     for cmid in ids:
-        cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), 'is_read': json.loads(cmid[5]), 'sid': int(cmid[3]), 'rid': int(cmid[4])}
+        is_read = False if cmid[5] == 'False' else json.loads(cmid[5])
+        cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), 'is_read': is_read, 'sid': int(cmid[3]), 'rid': int(cmid[4])}
         rows.append(cmnt)
     return rows
 

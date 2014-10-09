@@ -22,7 +22,7 @@ NTFY_INVITE_REJECT = u"%s отказался от боя %s %s"
 def create_battle_notification(from_user, to_user, battle_id, template):
     battle = get_battle._original(battle_id)
     battle_date = datetime.fromtimestamp(int(battle["battle_date"])).strftime('%H:%M %d/%m')
-    message = ""
+    message = None
     if template == NTFY_BATTLE_INVITE:
         message = NTFY_BATTLE_INVITE % (battle['user']['nickname'], battle_date, battle["descr"])
     if template == NTFY_BATTLE_FOLLOW:
@@ -47,13 +47,15 @@ def create_battle_notification(from_user, to_user, battle_id, template):
         usr = user_datail._original(from_user)
         to_user = battle['user']["id"]
         message = NTFY_INVITE_REJECT % (usr["nickname"], battle_date, battle["descr"])
+    if message is None:
+        message = template
     if rs.sismember("users:virtual", to_user):
         return
     chid = "chat:message:%s:%s:" % (from_user, to_user)
     mid = rs.incr(chid + "counter")
     chid = chid + str(mid)
     score = calendar.timegm(datetime.utcnow().timetuple())
-    chatm = {"id": mid, "text": message, 'is_read': False, 'sid': from_user, 'rid': to_user, "type": "battle", "battle_id": battle_id}
+    chatm = {"id": mid, "text": message, 'is_read': 'false', 'sid': from_user, 'rid': to_user, "type": "battle", "battle_id": battle_id}
     rs.hmset(chid, chatm)
     rs.zadd("chat:user:%s:unread" % to_user, chid, score)
     rs.sadd("chat:user:%s:ntfy" % to_user, chid)
