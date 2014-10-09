@@ -14,6 +14,7 @@ battle_types = ["platoon", "team", "absolute", "champion", "middle", "junior", "
 battle_model = {'type', 'descr', 'battle_date', 'privacy'}
 
 privacy = ["PRIVATE", "FOLLOWING", "ALL"]
+default_reminders = [15, 30]
 
 
 @api_route('/battle', methods=['POST'])
@@ -40,7 +41,7 @@ def create_battle():
     bid = rs.incr('battle_counter')
     bdata['id'] = bid
     bdata['create_date'] = int(calendar.timegm(datetime.utcnow().timetuple()))
-    process_battle_db(bid, uid, bdata, data.get("tanks", None))
+    process_battle_db(bid, uid, bdata, data.get("reminders", default_reminders))
     from warg.views.battle_followers import battleAcceptUser
     battleAcceptUser(bid, uid, True)
     #from warg.views.full_text import storeBattleInIndex
@@ -49,16 +50,20 @@ def create_battle():
     return bid
 
 
-def process_battle_db(bid, uid, bdata, tanks):
+def process_battle_db(bid, uid, bdata, reminders):
     rs.hmset("battle:%s" % bid, {'data': json.dumps(bdata), 'id': bid, 'uid': uid, 'battle_date': bdata['battle_date'], 'type': bdata['type'], 'privacy': bdata['privacy']})
     rs.zadd("battles:%s" % bdata['type'], bid, bdata['battle_date'])
     rs.zadd("user_battles:" + str(uid), bid, bdata['battle_date'])
     rs.zadd("battles_ids", bid, bdata['battle_date'])
     rs.zadd("privacy:%s" % bdata['privacy'], bid, bdata['battle_date'])
-    if tanks is not None:
-        for tank_id in tanks:
-            rs.sadd("tank:%s:battles" % tank_id, bid)
-            rs.sadd("battle:%s:tanks" % bid, tank_id)
+    for remmin in reminders:
+        rs.sadd("battle:%s:reminders" % bid, remmin)
+    from warg.views.jobs.battle_reminder import init_battle_reminders
+    init_battle_reminders(bid, bdata['battle_date'])
+    #if tanks is not None:
+        #for tank_id in tanks:
+            #rs.sadd("tank:%s:battles" % tank_id, bid)
+            #rs.sadd("battle:%s:tanks" % bid, tank_id)
 
 
 @api_route('/battle/<int:battle_id>/update', methods=['POST'])
@@ -97,8 +102,11 @@ def update_battle(battle_id):
     for tank_id in tanks:
         rs.srem("tank:%s:battles" % tank_id, battle_id)
     rs.delete("battle:%s:tanks" % battle_id)
+    from warg.views.jobs.battle_reminder import remove_battle_reminders
+    remove_battle_reminders(battle_id)
+    rs.delete("battle:%s:reminders" % battle_id)
 
-    process_battle_db(battle_id, uid, battle, data.get("tanks", None))
+    process_battle_db(battle_id, uid, battle, data.get("reminders", default_reminders))
     users = rs.zrange('battle:%s:users' % battle_id, 0, -1)
     for user_id in users:
         rs.zadd('user:%s:battles' % user_id, battle_id, battle['battle_date'])
@@ -128,6 +136,9 @@ def delete_battle(battle_id, admin=0):
             if user_id != uid:
                 create_battle_notification(uid, user_id, battle_id, NTFY_BATTLE_KICK)
         rs.delete("battle:%s:tanks" % battle_id)
+        from warg.views.jobs.battle_reminder import remove_battle_reminders
+        remove_battle_reminders(battle_id)
+        rs.delete("battle:%s:reminders" % battle_id)
         rs.delete("battle:%s" % battle_id)
         rs.sadd("whoosh:battles:deleted", battle_id)
         return 1

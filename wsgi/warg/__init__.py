@@ -164,3 +164,7 @@ def requires_auth(f):
 @requires_auth
 def admin_pages(filename=None):
     return send_file(app.config['STATIC_FOLDER'] + "admin/" + filename)
+
+
+from warg.views.jobs.battle_reminder import startup_initialize as battle_reminder_init
+battle_reminder_init()

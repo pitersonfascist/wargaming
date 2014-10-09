@@ -14,14 +14,31 @@ REMINDER_BTL_START = u"Напоминание: Бой %s состоится че
 def startup_initialize():
     battles = rs.zrangebyscore("battles_ids", int(calendar.timegm(datetime.utcnow().timetuple())), '+inf', withscores=True)
     for bid, bdate in battles:
-        print bid, datetime.fromtimestamp(bdate)
-        delta = timedelta(minutes=1)
-        print "delta", delta
-        reminders["battle:%s:job" % bid] = sched.add_date_job(send_battle_reminder, datetime.now() + delta, args=[bid, delta])
+        init_battle_reminders(bid, bdate)
     #sched.add_date_job(read_news, minute='*/10')
     #sched.unschedule_job(reminders["battle:%s:job" % 1])
-    print delta_to_left(timedelta(minutes=110))
-    sched.print_jobs()
+    #print delta_to_left(timedelta(minutes=110))
+    #sched.print_jobs()
+
+
+def remove_battle_reminders(battle_id):
+    remitems = rs.smembers("battle:%s:reminders" % battle_id)
+    for remmin in remitems:
+        key = "battle:%s:job:%s" % (battle_id, remmin)
+        job = reminders.get(key)
+        if job is not None:
+            sched.unschedule_job(job)
+            reminders[key] = None
+
+
+def init_battle_reminders(battle_id, bdate):
+    remitems = rs.smembers("battle:%s:reminders" % battle_id)
+    for remmin in remitems:
+        #remmin = int(remmin)
+        delta = timedelta(minutes=int(remmin))
+        date = datetime.now() - delta
+        if int(calendar.timegm(datetime.now().timetuple())) <= int(calendar.timegm(date.timetuple())):
+            reminders["battle:%s:job:%s" % (battle_id, remmin)] = sched.add_date_job(send_battle_reminder, date, args=[battle_id, delta])
 
 
 def send_battle_reminder(battle_id, delta):
@@ -29,6 +46,8 @@ def send_battle_reminder(battle_id, delta):
     accepted = rs.smembers('battle:%s:accepted' % battle_id)
     for member in accepted:
         create_battle_notification(battle['user']["id"], member, REMINDER_BTL_START % (battle['descr'], delta_to_left(delta)))
+    key = "battle:%s:job:%s" % (battle_id, delta)
+    reminders[key] = None
 
 
 def delta_to_left(delta):
