@@ -51,6 +51,8 @@ def create_battle():
 
 
 def process_battle_db(bid, uid, bdata, reminders):
+    timedelta = int(rs.get('user:%s:timedelta' % uid) or 0)
+    bdata['battle_date'] = int(bdata['battle_date']) + timedelta
     rs.hmset("battle:%s" % bid, {'data': json.dumps(bdata), 'id': bid, 'uid': uid, 'battle_date': bdata['battle_date'], 'type': bdata['type'], 'privacy': bdata['privacy']})
     rs.zadd("battles:%s" % bdata['type'], bid, bdata['battle_date'])
     rs.zadd("user_battles:" + str(uid), bid, bdata['battle_date'])
@@ -157,7 +159,7 @@ def get_battle(battle_id):
     zscore = rs.zscore("battles_ids", battle_id)
     if zscore is not None:
         rs.zadd(tmp, battle_id, 10 * zscore)
-        res = get_battles_by_set(tmp)
+        res = get_battles_arr_by_set(tmp, None, 0, 1)
         rs.delete(tmp)
         return {} if len(res) == 0 else res[0]
     else:

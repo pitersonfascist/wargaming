@@ -9,6 +9,7 @@ from warg.views import rs, ensure_dir
 import json
 #import time
 import os
+import calendar
 from datetime import datetime
 from time import mktime
 import httplib
@@ -135,6 +136,24 @@ def loggedUserUid():
     except:
         pass
     return 0
+
+
+@api_route('/hello', methods=['POST'])
+def set_user_timezone():
+    uid = loggedUserUid()
+    if uid == 0:
+        return 0
+    try:
+        user_timestamp = int(request.stream.read())
+    except:
+        return -1
+    timedelta = int(calendar.timegm(datetime.utcnow().timetuple())) - user_timestamp
+    timedelta = 30 * (timedelta / 30 / 60)
+    rs.set('user:%s:timedelta' % uid, timedelta)
+    #zonedelta = int(calendar.timegm(datetime.now().timetuple())) - user_timestamp
+    #zonedelta = 30 * (zonedelta / 30 / 60)
+    #rs.set('user:%s:zonedelta' % uid, zonedelta)
+    return timedelta
 
 
 @api_route('/user', methods=['GET'])

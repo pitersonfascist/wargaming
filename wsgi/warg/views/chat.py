@@ -177,8 +177,12 @@ def get_unread():
 def get_user_unread(uid):
     if rs.exists("chat:user:%s:unread" % uid) != 1:
         return []
-    offset = int(request.args.get("offset", 0))
-    count = int(request.args.get("count", 10))
+    try:
+        offset = int(request.args.get("offset", 0))
+        count = int(request.args.get("count", 10))
+    except:
+        offset = 0
+        count = 10
     rows = []
     lua = """local r1 = redis.call('ZREVRANGE', KEYS[1], KEYS[2], KEYS[3]);
 for i = 1, table.getn(r1) do

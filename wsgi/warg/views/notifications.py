@@ -4,6 +4,7 @@ from warg.views.users import detail as user_datail
 from warg.views.chat import send_message_to_user, get_user_unread
 from datetime import datetime
 import calendar
+import pytz
 from warg.views import rs
 import json
 
@@ -21,7 +22,10 @@ NTFY_INVITE_REJECT = u"%s отказался от боя %s %s"
 
 def create_battle_notification(from_user, to_user, battle_id, template):
     battle = get_battle._original(battle_id)
-    battle_date = datetime.fromtimestamp(int(battle["battle_date"])).strftime('%H:%M %d/%m')
+    to_user = battle['user']["id"] if int(to_user) == 0 else to_user
+    #timedelta = int(rs.get('user:%s:timedelta' % to_user) or 0)
+    #zonedelta = int(rs.get('user:%s:zonedelta' % to_user) or 0)
+    battle_date = datetime.fromtimestamp(int(battle["battle_date"]), tz=pytz.utc).strftime('UTC %H:%M %d/%m')
     message = None
     if template == NTFY_BATTLE_INVITE:
         message = NTFY_BATTLE_INVITE % (battle['user']['nickname'], battle_date, battle["descr"])

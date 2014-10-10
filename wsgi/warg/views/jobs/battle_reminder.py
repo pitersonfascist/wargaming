@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-from warg.views.battle import get_battle
+#from warg.views.battle import get_battle
 from warg import sched
 from warg.views import rs
 from datetime import datetime, timedelta
 import calendar
+import json
 from warg.views.notifications import create_battle_notification
 
 
@@ -37,16 +38,17 @@ def init_battle_reminders(battle_id, bdate):
         #remmin = int(remmin)
         delta = timedelta(minutes=int(remmin))
         date = datetime.fromtimestamp(bdate) - delta
-        print "battle", battle_id, "remind", remmin, datetime.fromtimestamp(bdate), date
         if int(calendar.timegm(datetime.now().timetuple())) <= int(calendar.timegm(date.timetuple())):
+            print "battle", battle_id, "remind", remmin, datetime.fromtimestamp(bdate), date
             reminders["battle:%s:job:%s" % (battle_id, remmin)] = sched.add_date_job(send_battle_reminder, date, args=[battle_id, delta])
 
 
 def send_battle_reminder(battle_id, delta):
-    battle = get_battle._original(battle_id)
+    battle = json.loads(rs.hget("battle:%s" % battle_id, 'data'))
+    user_id = rs.hget("battle:%s" % battle_id, 'uid')
     accepted = rs.smembers('battle:%s:accepted' % battle_id)
     for member in accepted:
-        create_battle_notification(battle['user']["id"], member, REMINDER_BTL_START % (battle['descr'], delta_to_left(delta)))
+        create_battle_notification(user_id, member, battle_id, REMINDER_BTL_START % (battle['descr'], delta_to_left(delta)))
     key = "battle:%s:job:%s" % (battle_id, delta)
     reminders[key] = None
 
