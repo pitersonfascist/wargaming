@@ -28,7 +28,10 @@ def remove_battle_reminders(battle_id):
         key = "battle:%s:job:%s" % (battle_id, remmin)
         job = reminders.get(key)
         if job is not None:
-            sched.unschedule_job(job)
+            try:
+                sched.unschedule_job(job)
+            except:
+                pass
             reminders[key] = None
 
 
@@ -49,7 +52,8 @@ def send_battle_reminder(battle_id, delta):
     accepted = rs.smembers('battle:%s:accepted' % battle_id)
     for member in accepted:
         create_battle_notification(user_id, member, battle_id, REMINDER_BTL_START % (battle['descr'], delta_to_left(delta)))
-    key = "battle:%s:job:%s" % (battle_id, delta)
+    hours, minutes = delta.seconds // 3600, delta.seconds % 3600 / 60
+    key = "battle:%s:job:%s" % (battle_id, hours * 60 + minutes)
     reminders[key] = None
 
 
