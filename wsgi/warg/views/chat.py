@@ -53,17 +53,12 @@ def websocket_api():
                 if message is None:
                     break
                 try:
-                    #message = re.escape(message)
-                    #message = message.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
-                    #print ":>", message
-                    f1 = open(app.config['UPLOAD_FOLDER'] + "chat_log.txt", "a")
-                    f1.write(message)  # .encode('utf-8')
-                    f1.close()
                     evt = json.loads(message)  # .encode('utf-8')
                     #print "type =", evt.get("type")
                     if evt.get("type") == "chat":
-                        print "Content", json.dumps(evt.get("content"))
                         on_chat_message(uid, evt.get("content"))
+                    if evt.get("type") == "battle_chat":
+                        on_battle_message(uid, evt.get("content"))
                     if evt.get("type") == "read_chat":
                         rm = evt.get("content")
                         read_message._original(rm.get('sid'), rm.get('mid'))
@@ -90,7 +85,7 @@ def notify_online_status(uid, is_online):
     followers = rs.smembers('user:' + str(uid) + ':followers')
     message = json.dumps({"type": "online_status", "content": {"user_id": uid, "online": is_online}})
     for f in followers:
-        send_message_to_user(f, message, '')
+        send_message_to_user(f, message)
 
 
 def on_chat_message(uid, msg):
@@ -111,17 +106,36 @@ def on_chat_message(uid, msg):
     rs.zadd("chat:user:%s:dialogs" % rid, dialog, score)
     chatm["create_date"] = score
     message = json.dumps({"type": "chat", "content": chatm})
-    send_message_to_user(uid, message, chid)
-    send_message_to_user(rid, message, chid)
+    send_message_to_user(uid, message)
+    send_message_to_user(rid, message)
     ntfs = rs.scard("chat:user:%s:ntfy" % rid)
     unread = get_unread._original()
     unread_message = ""
     if ntfs > 0 and len(unread) > 0:
         unread_message = json.dumps({"type": "unread", "content": {"count": len(unread), "message": unread[0]}})
-        send_message_to_user(rid, unread_message, '')
+        send_message_to_user(rid, unread_message)
 
 
-def send_message_to_user(uid, message, chid):
+def on_battle_message(uid, msg):
+    battle_id = int(msg.get('battle_id', 0))
+    if battle_id == 0 or len(msg.get('text', "")) == 0 or rs.sismember("battle:%s:accepted" % battle_id, uid) == 0:
+        return
+    chid = "battle:%s:message:%s:" % (battle_id, uid)
+    mid = rs.incr(chid + "counter")
+    chid = chid + str(mid)
+    score = calendar.timegm(datetime.utcnow().timetuple())
+    chatm = {"id": mid, "text": msg.get('text'), 'sid': uid, 'battle_id': battle_id, "type": "battle_chat"}
+    chatm['user'] = json.loads(rs.get("users:%s" % uid))
+    rs.hmset(chid, chatm)
+    rs.zadd("battle:%s:chat" % battle_id, chid, score)
+    chatm["create_date"] = score
+    message = json.dumps({"type": "battle_chat", "content": chatm})
+    members = rs.smembers("battle:%s:accepted" % battle_id)
+    for user_id in members:
+        send_message_to_user(user_id, message)
+
+
+def send_message_to_user(uid, message):
     wss = participants.get(str(uid))
     if wss is not None:
         for ws in wss:
@@ -153,8 +167,8 @@ def read_message(sid, mid):
     message = {"type": "unread", "content": {"count": len(unread)}}
     if ntfs > 0 and len(unread) > 0:
         message["content"]["message"] = unread[0]
-        send_message_to_user(uid, json.dumps(message), '')
-    send_message_to_user(sid, json.dumps({"type": "read_chat", "content": {"mid": mid, "rid": int(uid)}}), '')
+        send_message_to_user(uid, json.dumps(message))
+    send_message_to_user(sid, json.dumps({"type": "read_chat", "content": {"mid": mid, "rid": int(uid)}}))
     return 1
 
 
@@ -276,6 +290,36 @@ return r1;"""
     for cmid in ids:
         is_read = False if cmid[5] == 'False' else json.loads(cmid[5])
         cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), 'is_read': is_read, 'sid': int(cmid[3]), 'rid': int(cmid[4])}
+        rows.append(cmnt)
+    return rows
+
+
+@api_route('/battle/<int:battle_id>/chat_history')
+def get_battle_chat_history(battle_id):
+    uid = loggedUserUid()
+    if uid == 0 or rs.sismember("battle:%s:accepted" % battle_id, uid) == 0:
+        return []
+    dialog = "battle:%s:chat" % battle_id
+    if rs.exists(dialog) != 1:
+        return []
+    offset = int(request.args.get("offset", 0))
+    count = int(request.args.get("count", 10))
+    rows = []
+    lua = """local r1 = redis.call('ZREVRANGE', KEYS[1], KEYS[2], KEYS[3]);
+for i = 1, table.getn(r1) do
+  local chid = r1[i]
+  r1[i] = {}
+  r1[i][1] = redis.call('hget', chid, 'id')
+  r1[i][2] = redis.call('hget', chid, 'text')
+  r1[i][3] = redis.call('zscore', KEYS[1], chid)
+  r1[i][4] = redis.call('hget', chid, 'sid')
+  r1[i][5] = redis.call('get', 'users:'..r1[i][4])
+end
+return r1;"""
+    ids = rs.eval(lua, 3, dialog, offset, offset + count - 1)
+    #ids = rs.sort('look:' + str(look_id) + ':comments', start=offset, num=count, get='#')
+    for cmid in ids:
+        cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), 'sid': int(cmid[3]), 'user': json.loads(cmid[4])}
         rows.append(cmnt)
     return rows
 

@@ -68,4 +68,4 @@ def create_battle_notification(from_user, to_user, battle_id, template):
     unread = get_user_unread(to_user)
     if len(unread) > 0:
         unread_message = json.dumps({"type": "unread", "content": {"count": ucount, "message": unread[0]}})
-        send_message_to_user(to_user, unread_message, chid)
+        send_message_to_user(to_user, unread_message)
