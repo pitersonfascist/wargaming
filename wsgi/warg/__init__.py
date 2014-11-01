@@ -27,7 +27,8 @@ print "___init___", __name__
 def api_response(f, jsondump):
     @wraps(f)
     def decorated(*args, **kwargs):
-        return Response(json.dumps(f(*args, **kwargs)) if jsondump else f(*args, **kwargs), mimetype='application/json')
+        res = f(*args, **kwargs)
+        return Response(json.dumps(res) if jsondump else res, mimetype='application/json')
     decorated._original = f
     return decorated
 
@@ -42,12 +43,6 @@ def api_route(route, jsondump=True, **kwargs):
 @app.errorhandler(404)
 def not_found(error):
     return "404 error", 404
-
-
-@api_route('/test_', methods=['GET'])
-def getTest():
-    a = a['qwe']
-    return 1
 
 
 @api_route('/help', methods=['GET'])

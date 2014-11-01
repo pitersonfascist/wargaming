@@ -26,6 +26,10 @@ def create_battle():
         data = json.loads(request.stream.read())
     except:
         return -3
+    return do_create_battle(data)
+
+
+def do_create_battle(uid, data):
     bdata = {}
     fulldata = True
     for k in battle_model:
@@ -35,9 +39,9 @@ def create_battle():
         else:
             bdata[k] = data[k]
     if not fulldata:
-        return "Few data"
+        return -4 # "Few data"
     if data['type'] not in battle_types:
-        return "Wrong battle type"
+        return -5 # "Wrong battle type"
     bid = rs.incr('battle_counter')
     bdata['id'] = bid
     bdata['create_date'] = int(calendar.timegm(datetime.utcnow().timetuple()))
@@ -163,6 +167,7 @@ def get_battle(battle_id):
         rs.delete(tmp)
         return {} if len(res) == 0 else res[0]
     else:
+        rs.delete(tmp)
         return {}
 
 

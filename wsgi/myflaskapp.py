@@ -6,7 +6,7 @@ import warg.views.users
 import warg.views.tanks
 import warg.views.battle
 import warg.views.battle_followers
-##import warg.views.look_owners
+import warg.views.groups
 #import warg.views.look_comments
 import warg.views.followers
 #import warg.views.categories
