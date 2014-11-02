@@ -61,6 +61,8 @@ def websocket_api():
                         on_battle_message(uid, evt.get("content"))
                     if evt.get("type") == "group_chat":
                         on_group_message(uid, evt.get("content"))
+                    if evt.get("type") == "clan_chat":
+                        on_clan_message(uid, evt.get("content"))
                     if evt.get("type") == "read_chat":
                         rm = evt.get("content")
                         read_message._original(rm.get('sid'), rm.get('mid'))
@@ -152,6 +154,25 @@ def on_group_message(uid, msg):
     chatm["create_date"] = score
     message = json.dumps({"type": "group_chat", "content": chatm})
     members = rs.smembers("group:%s:users" % group_id)
+    for user_id in members:
+        send_message_to_user(user_id, message)
+
+
+def on_clan_message(uid, msg):
+    clan_id = int(msg.get('clan_id', 0))
+    if clan_id == 0 or len(msg.get('text', "")) == 0 or rs.sismember("group:%s:users" % clan_id, uid) == 0:
+        return
+    chid = "clan:%s:message:%s:" % (clan_id, uid)
+    mid = rs.incr(chid + "counter")
+    chid = chid + str(mid)
+    score = calendar.timegm(datetime.utcnow().timetuple())
+    chatm = {"id": mid, "text": msg.get('text'), 'sid': uid, 'clan_id': clan_id, "type": "clan_chat"}
+    chatm['user'] = json.loads(rs.get("users:%s" % uid))
+    rs.hmset(chid, chatm)
+    rs.zadd("clan:%s:messages" % clan_id, chid, score)
+    chatm["create_date"] = score
+    message = json.dumps({"type": "clan_chat", "content": chatm})
+    members = rs.smembers("clan:%s:users" % clan_id)
     for user_id in members:
         send_message_to_user(user_id, message)
 
@@ -353,6 +374,14 @@ def get_group_chat_history(group_id):
     if uid == 0 or rs.sismember("group:%s:users" % group_id, uid) == 0:
         return []
     return get_multi_chat_history("group:%s:messages" % group_id)
+
+
+@api_route('/clan/<int:clan_id>/chat_history')
+def get_clan_chat_history(clan_id):
+    uid = loggedUserUid()
+    if uid == 0 or rs.sismember("clan:%s:users" % clan_id, uid) == 0:
+        return []
+    return get_multi_chat_history("clan:%s:messages" % clan_id)
 
 
 @api_route('/chat/test')
