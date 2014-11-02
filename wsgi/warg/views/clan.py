@@ -6,7 +6,7 @@ import json
 from warg.views.users import loggedUserUid
 
 
-clan_model = {'name', 'clan_id'}
+clan_model = {'name', 'abbreviation', 'clan_id'}
 
 
 @api_route('/clan', methods=['POST'])
@@ -28,7 +28,7 @@ def create_clan():
             gdata[k] = data[k]
     if not fulldata:
         return "Few data"
-    user_clan_id = rs.get("user:%s:clan")
+    user_clan_id = rs.get("user:%s:clan" % uid)
     if user_clan_id == str(data["clan_id"]):
         return data["clan_id"]
     if int(user_clan_id or 0) > 0:
@@ -56,7 +56,7 @@ def clan_del_user(clan_id, user_id):
 
 @api_route('/clan/<int:clan_id>/users', methods=['GET'])
 def get_clan_users(clan_id):
-    if rs.exists("group:%s" % clan_id) != 1:
+    if rs.exists("clan:%s" % clan_id) != 1:
         return []
     offset = request.args.get("offset", 0)
     count = request.args.get("count", 20)
