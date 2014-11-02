@@ -211,6 +211,8 @@ def create_group_battle(group_id):
     uid = loggedUserUid()
     if uid == 0:
         return -2
+    if rs.sismember("group:%s:users" % group_id, uid) == 0:
+        return -1
     try:
         data = json.loads(request.stream.read())
     except:
@@ -226,5 +228,10 @@ def create_group_battle(group_id):
 
 @api_route('/group/<int:group_id>/battles', methods=['GET'])
 def get_group_battles(group_id):
+    uid = loggedUserUid()
+    if uid == 0:
+        return []
+    if rs.sismember("group:%s:users" % group_id, uid) == 0:
+        return []
     from warg.views.battle import get_battles_by_set
     return get_battles_by_set("group:%s:battles" % group_id)
