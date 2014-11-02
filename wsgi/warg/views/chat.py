@@ -160,7 +160,7 @@ def on_group_message(uid, msg):
 
 def on_clan_message(uid, msg):
     clan_id = int(msg.get('clan_id', 0))
-    if clan_id == 0 or len(msg.get('text', "")) == 0 or rs.sismember("group:%s:users" % clan_id, uid) == 0:
+    if clan_id == 0 or len(msg.get('text', "")) == 0 or rs.sismember("clan:%s:users" % clan_id, uid) == 0:
         return
     chid = "clan:%s:message:%s:" % (clan_id, uid)
     mid = rs.incr(chid + "counter")
