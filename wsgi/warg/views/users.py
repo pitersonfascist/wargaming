@@ -122,7 +122,11 @@ def add_user_avatar():
             ext = _file.filename.rsplit('.', 1)[1]
             fname = outfile + str(uid)
             _file.save(app.config['UPLOAD_FOLDER'] + fname + "_orig." + ext)
-            process_user_image(outfile + str(uid), ext, uid)
+            outfile = outfile + str(uid) + "_" + rs.incr('user:%s:avatar' % uid)
+            process_user_image(outfile, ext, uid)
+            u = json.loads(rs.get("users:%s" % uid))
+            u["avatar"] = outfile
+            rs.set("users:%s" % uid, json.dumps(u))
         break
     return uid
 
@@ -167,12 +171,13 @@ def detail(user_id):
     #return request.headers.get('Cookie')
     u = None
     if (user_id is not None) and rs.exists('users:' + str(user_id)) == 1:
-        u = rs.get('users:' + str(user_id))
         u = json.loads(rs.get("users:" + str(user_id)))
         u['soc_links'] = list(rs.smembers('user_soc_links:' + str(user_id)))
         u['is_online'] = int(rs.sismember('users_online', user_id))
         u['is_follow'] = int(rs.sismember('user:%s:followers' % user_id, loggedUserUid()))
         u['virtual'] = int(rs.sismember('users:virtual', user_id))
+        if int(rs.get("user:%s:clan" % user_id) or 0) > 0:
+            u['clan'] = json.loads(rs.get("clan:%s" % u["clan_id"]))
         #u = json.dumps(u)
     return u or {}
 
