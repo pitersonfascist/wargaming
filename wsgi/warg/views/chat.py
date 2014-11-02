@@ -59,6 +59,8 @@ def websocket_api():
                         on_chat_message(uid, evt.get("content"))
                     if evt.get("type") == "battle_chat":
                         on_battle_message(uid, evt.get("content"))
+                    if evt.get("type") == "group_chat":
+                        on_group_message(uid, evt.get("content"))
                     if evt.get("type") == "read_chat":
                         rm = evt.get("content")
                         read_message._original(rm.get('sid'), rm.get('mid'))
@@ -131,6 +133,25 @@ def on_battle_message(uid, msg):
     chatm["create_date"] = score
     message = json.dumps({"type": "battle_chat", "content": chatm})
     members = rs.smembers("battle:%s:accepted" % battle_id)
+    for user_id in members:
+        send_message_to_user(user_id, message)
+
+
+def on_group_message(uid, msg):
+    group_id = int(msg.get('group_id', 0))
+    if group_id == 0 or len(msg.get('text', "")) == 0 or rs.sismember("group:%s:users" % group_id, uid) == 0:
+        return
+    chid = "group:%s:message:%s:" % (group_id, uid)
+    mid = rs.incr(chid + "counter")
+    chid = chid + str(mid)
+    score = calendar.timegm(datetime.utcnow().timetuple())
+    chatm = {"id": mid, "text": msg.get('text'), 'sid': uid, 'group_id': group_id, "type": "group_chat"}
+    chatm['user'] = json.loads(rs.get("users:%s" % uid))
+    rs.hmset(chid, chatm)
+    rs.zadd("group:%s:messages" % group_id, chid, score)
+    chatm["create_date"] = score
+    message = json.dumps({"type": "group_chat", "content": chatm})
+    members = rs.smembers("group:%s:users" % group_id)
     for user_id in members:
         send_message_to_user(user_id, message)
 
@@ -294,13 +315,8 @@ return r1;"""
     return rows
 
 
-@api_route('/battle/<int:battle_id>/chat_history')
-def get_battle_chat_history(battle_id):
-    uid = loggedUserUid()
-    if uid == 0 or rs.sismember("battle:%s:accepted" % battle_id, uid) == 0:
-        return []
-    dialog = "battle:%s:chat" % battle_id
-    if rs.exists(dialog) != 1:
+def get_multi_chat_history(dialog_key):
+    if rs.exists(dialog_key) != 1:
         return []
     offset = int(request.args.get("offset", 0))
     count = int(request.args.get("count", 10))
@@ -316,12 +332,27 @@ for i = 1, table.getn(r1) do
   r1[i][5] = redis.call('get', 'users:'..r1[i][4])
 end
 return r1;"""
-    ids = rs.eval(lua, 3, dialog, offset, offset + count - 1)
-    #ids = rs.sort('look:' + str(look_id) + ':comments', start=offset, num=count, get='#')
+    ids = rs.eval(lua, 3, dialog_key, offset, offset + count - 1)
     for cmid in ids:
         cmnt = {'id': int(cmid[0]), 'text': cmid[1], 'create_date': int(cmid[2]), 'sid': int(cmid[3]), 'user': json.loads(cmid[4])}
         rows.append(cmnt)
     return rows
+
+
+@api_route('/battle/<int:battle_id>/chat_history')
+def get_battle_chat_history(battle_id):
+    uid = loggedUserUid()
+    if uid == 0 or rs.sismember("battle:%s:accepted" % battle_id, uid) == 0:
+        return []
+    return get_multi_chat_history("battle:%s:chat" % battle_id)
+
+
+@api_route('/group/<int:group_id>/chat_history')
+def get_group_chat_history(group_id):
+    uid = loggedUserUid()
+    if uid == 0 or rs.sismember("group:%s:users" % group_id, uid) == 0:
+        return []
+    return get_multi_chat_history("group:%s:messages" % group_id)
 
 
 @api_route('/chat/test')
