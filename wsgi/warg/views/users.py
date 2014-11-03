@@ -120,9 +120,8 @@ def add_user_avatar():
         print "File: " + f, _file.filename
         if allowed_file(_file.filename):
             ext = _file.filename.rsplit('.', 1)[1]
-            fname = outfile + str(uid)
-            _file.save(app.config['UPLOAD_FOLDER'] + fname + "_orig." + ext)
-            outfile = outfile + str(uid) + "_" + rs.incr('user:%s:avatar' % uid)
+            outfile = "%s%s_%s" % (outfile, uid, rs.incr('user:%s:avatar' % uid))
+            _file.save(app.config['UPLOAD_FOLDER'] + outfile + "_orig." + ext)
             process_user_image(outfile, ext, uid)
             u = json.loads(rs.get("users:%s" % uid))
             u["avatar"] = outfile
