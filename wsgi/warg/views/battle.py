@@ -26,7 +26,7 @@ def create_battle():
         data = json.loads(request.stream.read())
     except:
         return -3
-    return do_create_battle(data)
+    return do_create_battle(uid, data)
 
 
 def do_create_battle(uid, data):
