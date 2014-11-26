@@ -194,7 +194,6 @@ return r1;"""
     rows = rs.eval(lua, 4, group_id, loggedUserUid(), offset, count)
     users = []
     for i in range(0, len(rows) - 1):
-        print i, rows[i]
         if i % 4 != 0 or rows[i] is None:
             continue
         u = json.loads(rows[i])
