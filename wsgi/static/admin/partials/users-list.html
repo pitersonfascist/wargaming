@@ -5,10 +5,11 @@
         {{u.id}}
       </td>
       <td>
-        <img ng-src="/media/{{u.avatar}}_s.jpg">
+        <img ng-src="/media/{{u.avatar}}_s.jpg" ng-hide="u.avatar == null">
       </td>
       <td>
-        <a href="#/user/{{u.id}}">{{u.nickname}}</a>  
+        <a href="#/user/{{u.id}}" >{{u.nickname}}</a>  
+        <!-- ng-style="{color: (u.virtual == 1 ? 'red' : 'black')}" -->
       </td>
     </tr>    
   </table>
