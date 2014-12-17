@@ -1,0 +1,48 @@
+<table >
+  <tr>
+    <td>
+      <img ng-src="/media/{{user.avatar}}_m.jpg">
+      <b >{{user.nickname}}</b>
+      <font ng-hide="user.virtual == 0" color="red">
+        Виртуальный
+      </font>
+    </td>
+    <td>
+      <ul >
+        <li ng-repeat="soc in user.soc_links">
+          <p ng-click="openSocProfile(soc)">{{soc}}</p>
+        </li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td ng-hide="user.clan == null || user.clan.clan_id == null">
+      Клан:  {{user.clan.abbreviation}} <b>{{user.clan.name}}</b>
+      <img src="{{user.clan.emblems.large}}">
+    </td>
+  </tr>
+  <tr>
+    <td ng-hide="user.clan == null || user.clan.clan_id == null">
+      Клан: <b>{{user.clan.description}}</b>
+    </td>
+  </tr>
+</table> 
+
+<div ng-show="!isMe">
+	<button ng-show="user.is_follow==0" ng-click="followUser()">Follow</button>
+	<button ng-show="user.is_follow==1" ng-click="unFollowUser()">Un Follow</button>	
+</div>
+
+
+<div class="col-md-10">
+  <!--Body content-->
+  Followers:
+  <ul class="phones">
+    <li ng-repeat="f in followers"
+        class="thumbnail phone-listing">
+      <a href="#/user/{{f.id}}" class="thumb"><img ng-src="/media/{{f.avatar}}_s.jpg"></a>
+      <a href="#/user/{{f.id}}">{{f.nickname}}</a>
+    </li>
+  </ul>
+
+</div>

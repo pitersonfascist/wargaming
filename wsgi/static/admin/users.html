@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" ng-app="wargApp">
+<head>
+  <meta charset="utf-8">
+  <title>HeadQuarters admin</title>
+  <link rel="stylesheet" href="../css/bootstrap.css">
+  <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/animations.css">
+
+  <script src="../js/jquery-1.11.1.min.js"></script>
+  <script src="../angular-1.2.27/angular.js"></script>
+  <script src="../angular-1.2.27/angular-animate.js"></script>
+  <script src="../angular-1.2.27/angular-route.js"></script>
+  <script src="../angular-1.2.27/angular-resource.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/directives.js"></script>
+  <script src="js/animations.js"></script>
+  <script src="js/controllers.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/services.js"></script>
+</head>
+<body>
+
+<table ng-controller="AccountCtrl">
+  <tr>
+    <td>
+      <a href="#/user/{{account.id}}"><img ng-src="/media/{{account.avatar}}_m.jpg"></a>
+      <b>{{account.nickname}}</b>
+    </td>
+    <td>
+      <BUTTON ng-click="logout()" ng-show="account.id > 0">Logout</BUTTON>
+      <BUTTON ng-click="login()" ng-show="!account.id">Login</BUTTON>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td>
+      
+      <ul>
+        <a href="#/users">Список юзеров</a>
+      </ul>
+
+    </td>
+
+    <td>
+      <div class="view-container">
+        <div ng-view class="view-frame"></div>
+      </div>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

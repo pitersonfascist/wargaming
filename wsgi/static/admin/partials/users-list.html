@@ -1,0 +1,15 @@
+<div class="container-fluid" >
+  <table>
+    <tr ng-repeat="u in users">
+      <td>
+        {{u.id}}
+      </td>
+      <td>
+        <img ng-src="/media/{{u.avatar}}_s.jpg">
+      </td>
+      <td>
+        <a href="#/user/{{u.id}}">{{u.nickname}}</a>  
+      </td>
+    </tr>    
+  </table>
+</div>
