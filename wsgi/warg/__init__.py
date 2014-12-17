@@ -158,7 +158,10 @@ def requires_auth(f):
 @app.route('/admin/<path:filename>')
 @requires_auth
 def admin_pages(filename=None):
-    return send_file(app.config['STATIC_FOLDER'] + "admin/" + filename)
+    if os.path.isfile(app.config['STATIC_FOLDER'] + "admin/" + filename):
+        return send_file(app.config['STATIC_FOLDER'] + "admin/" + filename)
+    else:
+        return not_found(None)
 
 
 from warg.views.jobs.battle_reminder import startup_initialize as battle_reminder_init
