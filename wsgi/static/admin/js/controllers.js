@@ -15,7 +15,28 @@ wargControllers.controller('AccountCtrl', ['$scope', 'Account', 'Logout', 'REGIS
     }
 
     $scope.login = function(){
-      //window.location.href = "/api/facebook/login";
+      var WOT_APP_ID   = "541bb590158341e9e7675ffe10629c02";
+      var ACC_FIELDS   = "clan_id,global_rating,last_battle_time,statistics.all.battles,statistics.all.wins,statistics.all.losses";
+      var redirectURI  = "http://" + window.location.host + "/api/user/wot"
+
+      window.loginWin = window.open("https://api.worldoftanks.ru/wot/auth/login/?" + "application_id=" + WOT_APP_ID + "&" + "redirect_uri=" + redirectURI
+        , "Вход")
+      window.loginInterval = setInterval(window.checkIsLogin, 500);
+    }
+
+    window.checkIsLogin = function(){
+        try{
+          if(window.loginWin.location.host == window.location.host){
+            clearInterval(window.loginInterval);
+            window.loginWin.close();
+            window.loginWin = null;
+            $scope.account = Account.query();
+            REGISTEREDUSER.setData($scope.account);
+          }
+        }catch(err){
+
+        }
+        
     }
     
   }]);
