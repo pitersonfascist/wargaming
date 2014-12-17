@@ -104,8 +104,9 @@ def searchuser():
         query = QueryParser("nickname", uix.schema).parse("nickname:*%s*" % q)  # QueryParser("name", ix.schema).parse("tash*")
         #print query
         user_id = sorting.FieldFacet("user_id", reverse=True)
-        results = searcher.search_page(query, offset + 1, pagelen=count, sortedby=user_id)
-        if results.offset / count < offset:
+        results = searcher.search_page(query, max(offset / count, 0) + 1, pagelen=count, sortedby=user_id)
+        print results.offset, count, offset, max(offset / count, 0) + 1
+        if results.offset < offset:
             return "[]"
         tmp = hashlib.md5(str(mktime(datetime.datetime.now().timetuple()))).hexdigest() + "user_search_tmp"
         lua = """local searched = loadstring('return ' .. KEYS[1])()
