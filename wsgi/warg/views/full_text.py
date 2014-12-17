@@ -42,14 +42,15 @@ def rebuildUsersIndex():
     users = rs.keys("users:*")
     users = rs.mget(users)
     for u in users:
-        u = json.loads(u)
-        storeUserInIndex(u, writer)
+        if u is not None:
+            u = json.loads(u)
+            storeUserInIndex(u, writer)
     writer.commit()
 
 
 def rebuildBattleIndex():
     createBattleSchema()
-    bix = open_dir(battlebattleibattlesindex_dir)
+    bix = open_dir(battlesindex_dir)
     writer = AsyncWriter(bix)
 
     #battles = rs.keys("battle:*")
@@ -100,7 +101,7 @@ def searchuser():
     offset = int(request.args.get("offset", 0))
     count = int(request.args.get("count", 20))
     with uix.searcher() as searcher:
-        query = QueryParser("nickname", uix.schema).parse("name:*%s*" % q)  # QueryParser("name", ix.schema).parse("tash*")
+        query = QueryParser("nickname", uix.schema).parse("nickname:*%s*" % q)  # QueryParser("name", ix.schema).parse("tash*")
         #print query
         user_id = sorting.FieldFacet("user_id", reverse=True)
         results = searcher.search_page(query, offset + 1, pagelen=count, sortedby=user_id)

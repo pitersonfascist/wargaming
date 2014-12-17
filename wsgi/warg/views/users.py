@@ -105,6 +105,7 @@ def insert_wot_user(profile, virtual=0):
         rs.sadd("users:virtual", uid)
     from warg.views.full_text import storeUserInIndex
     storeUserInIndex(user_data)
+    rs.sadd("user_ids", uid)
     return uid
 
 
