@@ -190,7 +190,7 @@ def logout():
         return app.make_response(json.dumps(0))
     response = app.make_response(json.dumps(1))
     rs.delete('ussid:' + ussid)
-    response.set_cookie('uSSID', value=None)
+    response.set_cookie('uSSID', value="")
     return response
 
 
