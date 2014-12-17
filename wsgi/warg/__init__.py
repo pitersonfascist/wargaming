@@ -28,7 +28,12 @@ def api_response(f, jsondump):
     @wraps(f)
     def decorated(*args, **kwargs):
         res = f(*args, **kwargs)
-        return Response(json.dumps(res) if jsondump else res, mimetype='application/json')
+        resp = Response(json.dumps(res) if jsondump else res, mimetype='application/json')
+        h = resp.headers
+        h['Access-Control-Allow-Origin'] = "*"
+        h['Access-Control-Allow-Methods'] = "GET, POST"
+        h['Access-Control-Max-Age'] = 60
+        return resp
     decorated._original = f
     return decorated
 
