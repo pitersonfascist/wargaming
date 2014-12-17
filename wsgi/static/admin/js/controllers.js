@@ -36,7 +36,6 @@ wargControllers.controller('AccountCtrl', ['$scope', 'Account', 'Logout', 'REGIS
         }catch(err){
 
         }
-        
     }
     
   }]);
@@ -97,6 +96,11 @@ wargControllers.controller('UsersListCtrl', ['$scope', 'Users',
     $scope.loadPrev = function(){
       offset -= count;
       $scope.loadUsers();
+    }
+
+    $scope.searchUser = function(q){
+       query = q;
+       $scope.loadUsers();
     }
 
     $scope.loadUsers();
