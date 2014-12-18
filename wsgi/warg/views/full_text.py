@@ -20,6 +20,7 @@ from whoosh.writing import AsyncWriter
 def rebuildIndex():
     rebuildUsersIndex()
     rebuildBattleIndex()
+    rebuildGroupsIndex()
     return 1
 
 
@@ -29,9 +30,14 @@ def createUsersSchema():
 
 
 def createBattleSchema():
-    schema = Schema(id=NUMERIC(stored=True, unique=True, sortable=True), descr=TEXT(stored=True), battle_date=NUMERIC(stored=True, sortable=True))
+    schema = Schema(id=NUMERIC(stored=True, unique=True, sortable=True), descr=TEXT(stored=False), battle_date=NUMERIC(stored=True, sortable=True))
     #, type=TEXT(stored=True), privacy=TEXT(stored=True)
     create_in(battlesindex_dir, schema)
+
+
+def createGroupSchema():
+    schema = Schema(id=NUMERIC(stored=True, unique=True, sortable=True), descr=TEXT(stored=False), name=TEXT(stored=False))
+    create_in(groupsindex_dir, schema)
 
 
 def rebuildUsersIndex():
@@ -61,6 +67,18 @@ def rebuildBattleIndex():
     writer.commit()
 
 
+def rebuildGroupsIndex():
+    createGroupSchema()
+    gix = open_dir(groupsindex_dir)
+    writer = AsyncWriter(gix)
+
+    groups = rs.zrange("group_ids", 0, -1)
+    for gid in groups:
+        g = json.loads(rs.hget("group:%s" % gid, 'data'))
+        storeGroupInIndex(g, writer)
+    writer.commit()
+
+
 def storeUserInIndex(u, writer=None):
     commit = False
     if writer is None:
@@ -77,6 +95,16 @@ def storeBattleInIndex(b, writer=None):
         writer = AsyncWriter(bix)
         commit = True
     writer.add_document(id=b.get('id'), descr=b.get('descr'), battle_date=u.get('battle_date'))
+    if commit:
+        writer.commit()
+
+
+def storeGroupInIndex(group, writer=None):
+    commit = False
+    if writer is None:
+        writer = AsyncWriter(gix)
+        commit = True
+    writer.add_document(name=group['name'], descr=group['descr'], id=group['id'])
     if commit:
         writer.commit()
 
@@ -132,3 +160,9 @@ if not os.path.exists(battlesindex_dir):
     os.makedirs(battlesindex_dir)
     createBattleSchema()
 bix = open_dir(battlesindex_dir)
+
+groupsindex_dir = app.config['UPLOAD_FOLDER'] + "whoosh/groups"
+if not os.path.exists(groupsindex_dir):
+    os.makedirs(groupsindex_dir)
+    createGroupSchema()
+gix = open_dir(groupsindex_dir)
