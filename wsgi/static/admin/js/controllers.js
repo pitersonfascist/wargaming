@@ -78,23 +78,23 @@ wargControllers.controller('UserCtrl', ['$scope', '$routeParams', '$http', 'User
 wargControllers.controller('UsersListCtrl', ['$scope', 'Users',
   function($scope, Users) {
 
-    var offset = 0;
+    $scope.offset = 0;
     var count = 20;
     var query = "";
 
     $scope.users = [];
 
     $scope.loadUsers = function(){
-      $scope.users = Users.query({q: query, offset: offset, count: count});
+      $scope.users = Users.query({q: query, offset: $scope.offset, count: count});
     }
 
     $scope.loadNext = function(){
-      offset += count;
+      $scope.offset += count;
       $scope.loadUsers();
     }
 
     $scope.loadPrev = function(){
-      offset -= count;
+      $scope.offset -= count;
       $scope.loadUsers();
     }
 
@@ -104,5 +104,11 @@ wargControllers.controller('UsersListCtrl', ['$scope', 'Users',
     }
 
     $scope.loadUsers();
+
+  }]);
+
+wargControllers.controller('StatsCtrl', ['$scope', 'Stats',
+  function($scope, Stats) {
+    $scope.stats = Stats.query();
 
   }]);

@@ -41,3 +41,10 @@ wargServices.factory('Users', ['$resource',
       query: {method:'GET', params:{q: "", offset: 0, count: 20}, isArray:true}
     });
   }]);
+
+wargServices.factory('Stats', ['$resource',
+  function($resource){
+    return $resource('/api/system/info', {}, {
+      query: {method:'GET', params:{}, isArray:false}
+    });
+  }]);

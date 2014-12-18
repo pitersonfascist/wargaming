@@ -34,7 +34,19 @@
   </tr>
 </table>
 
-<table>
+<table width="100%">
+  <tr ng-controller="StatsCtrl">
+    <td>
+      
+    </td>
+    <td align="right">
+      <i>Статистика</i>
+      Юзеров: <b>{{stats.users}}</b>
+      Боев: <b>{{stats.battles}}</b>
+      Redis: <b>{{stats.redis_usage}}</b>
+      Диск: <b>{{stats.disk_usage}}</b>
+    </td>
+  </tr>
   <tr>
     <td>
       
