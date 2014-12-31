@@ -176,6 +176,7 @@ def detail(user_id):
         u['is_online'] = int(rs.sismember('users_online', user_id))
         u['is_follow'] = int(rs.sismember('user:%s:followers' % user_id, loggedUserUid()))
         u['virtual'] = int(rs.sismember('users:virtual', user_id))
+        u['memo'] = rs.get('user:%s:memo:%s' % (user_id, loggedUserUid()))
         clan_id = int(rs.get("user:%s:clan" % user_id) or 0)
         if clan_id > 0:
             u['clan'] = json.loads(rs.hget("clan:%s" % clan_id, 'data'))

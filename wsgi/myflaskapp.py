@@ -3,6 +3,7 @@ from warg import app
 
 import warg.views
 import warg.views.users
+import warg.views.user_memos
 import warg.views.tanks
 import warg.views.battle
 import warg.views.battle_followers
