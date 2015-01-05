@@ -29,6 +29,7 @@ return table.getn(r1);"""
     stat["groups"] = rs.zcard("group_ids")
     stat["clans"] = rs.zcard("clan_ids")
     stat["online"] = rs.scard("users_online")
+    stat["max_online"] = rs.get("stat:max_online")
     stat["disk_usage"] = getFolderSize(app.config['UPLOAD_FOLDER'])
     stat["redis_usage"] = info['used_memory_human']
     #print "SYSTEM: ", os.popen("du -hs " + app.config['UPLOAD_FOLDER']).read().split()[0]

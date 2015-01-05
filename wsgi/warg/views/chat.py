@@ -41,6 +41,9 @@ def websocket_api():
         participants[str(uid)].add(ws)
         participants[str(uid)].add(ws)
         rs.sadd("users_online", uid)
+        online_cnt = rs.scard("users_online")
+        if online_cnt > rs.get("stat:max_online"):
+            rs.set("stat:max_online", online_cnt)
         notify_online_status(uid, True)
         ntfs = rs.scard("chat:user:%s:ntfy" % uid)
         unread = get_unread._original()
