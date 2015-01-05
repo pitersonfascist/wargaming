@@ -195,6 +195,13 @@ def logout():
     return response
 
 
+@api_route('/users/online', jsondump=False)
+def get_online_users():
+    res = rs.sort("users_online", get='users:*')
+    r = ",".join(res)
+    return "[" + r + "]"
+
+
 @app.route('/api/user/<int:user_id>/fake_login')
 @requires_auth
 def fake_login(user_id):
