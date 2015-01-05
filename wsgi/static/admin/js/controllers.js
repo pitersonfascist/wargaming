@@ -87,6 +87,10 @@ wargControllers.controller('UsersListCtrl', ['$scope', 'Users',
     $scope.loadUsers = function(){
       $scope.users = Users.query({q: query, offset: $scope.offset, count: count});
     }
+    
+    $scope.loadOnline = function(){
+      $scope.users = Users.online();
+    }
 
     $scope.loadNext = function(){
       $scope.offset += count;
@@ -101,6 +105,13 @@ wargControllers.controller('UsersListCtrl', ['$scope', 'Users',
     $scope.searchUser = function(q){
        query = q;
        $scope.loadUsers();
+    }
+    
+    $scope.onlineChecked = function(){
+        if($scope.isOnline)
+            $scope.loadOnline();
+        else
+            $scope.loadUsers();
     }
 
     $scope.loadUsers();
