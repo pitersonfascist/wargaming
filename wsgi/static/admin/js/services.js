@@ -37,9 +37,9 @@ wargServices.factory('User', ['$resource',
 
 wargServices.factory('Users', ['$resource',
   function($resource){
-    return $resource('/api/user:action', {}, {
-      query: {method:'GET', params:{action: "/search", q: "", offset: 0, count: 20}, isArray:true},
-      online: {method:'GET', params:{action: "s/online"}, isArray:true}
+    return $resource('/api/user/search', {}, {
+      query: {method:'GET', params:{q: "", offset: 0, count: 20}, isArray:true},
+      online: {method:'GET', url: "/api/users/online", isArray:true}
     });
   }]);
 
