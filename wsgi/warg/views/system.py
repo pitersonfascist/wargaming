@@ -1,7 +1,5 @@
 from warg import api_route, app, requires_auth
-from flask import Response
 from warg.views import rs
-import json
 import os
 
 
@@ -25,12 +23,16 @@ def systemInfo():
     info = rs.info()
     lua = """local r1 = redis.call('keys', 'users:*');
 return table.getn(r1);"""
-    users = rs.eval(lua, 0) - rs.scard("users:virtual")
+    stat = {"users": rs.eval(lua, 0) - rs.scard("users:virtual")}
     #users = rs.keys("users:*")
-    battles = rs.zcard("battles_ids")
+    stat["battles"] = rs.zcard("battles_ids")
+    stat["groups"] = rs.zcard("group_ids")
+    stat["clans"] = rs.zcard("clan_ids")
+    stat["online"] = rs.scard("users_online")
+    stat["disk_usage"] = getFolderSize(app.config['UPLOAD_FOLDER'])
+    stat["redis_usage"] = info['used_memory_human']
     #print "SYSTEM: ", os.popen("du -hs " + app.config['UPLOAD_FOLDER']).read().split()[0]
-    res = {"disk_usage": getFolderSize(app.config['UPLOAD_FOLDER']), "redis_usage": info['used_memory_human'], "users": users, "battles": battles}
-    return res
+    return stat
 
 
 def getFolderSize(folder):
