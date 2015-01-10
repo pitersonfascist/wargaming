@@ -373,9 +373,9 @@ def get_battle_chat_history(battle_id):
 
 @api_route('/group/<int:group_id>/chat_history')
 def get_group_chat_history(group_id):
-    uid = loggedUserUid()
-    if uid == 0 or rs.sismember("group:%s:users" % group_id, uid) == 0:
-        return []
+    #uid = loggedUserUid()
+    #if uid == 0 or rs.sismember("group:%s:users" % group_id, uid) == 0:
+    #    return []
     return get_multi_chat_history("group:%s:messages" % group_id)
 
 

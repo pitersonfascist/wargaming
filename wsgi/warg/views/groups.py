@@ -177,8 +177,8 @@ def group_unfollow(group_id):
 
 @api_route('/group/<int:group_id>/users', methods=['GET'])
 def get_group_users(group_id):
-    if rs.exists("group:%s" % group_id) != 1:
-        return []
+    #if rs.exists("group:%s" % group_id) != 1:
+    #    return []
     offset = request.args.get("offset", 0)
     count = request.args.get("count", 20)
     lua = """local r1 = redis.call('sort', 'group:'..tostring(KEYS[1])..':users', 'DESC', 'LIMIT', KEYS[3], KEYS[4],
@@ -230,7 +230,7 @@ def get_group_battles(group_id):
     uid = loggedUserUid()
     if uid == 0:
         return []
-    if rs.sismember("group:%s:users" % group_id, uid) == 0:
-        return []
+    #if rs.sismember("group:%s:users" % group_id, uid) == 0:
+    #    return []
     from warg.views.battle import get_battles_by_set
     return get_battles_by_set("group:%s:battles" % group_id)
