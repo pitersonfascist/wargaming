@@ -46,7 +46,10 @@ def register_wot():
     if rs.exists(wotuid) != 1:
         data = account_info(access_token, request.args.get('account_id'))
         if data['status'] == 'ok':
-            insert_wot_user(data['data'][request.args.get('account_id')])
+            if data['data'][request.args.get('account_id')] is not None:
+                insert_wot_user(data['data'][request.args.get('account_id')])
+            else:
+                return json.dumps("Error: Null profile")
         else:
             return json.dumps("Error: " + data['error']['message'])
     if rs.hget(wotuid, 'virtual') == '1':
