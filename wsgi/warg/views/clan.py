@@ -6,7 +6,7 @@ import json
 from warg.views.users import loggedUserUid
 
 
-clan_model = {'name', 'abbreviation', 'clan_id'}
+clan_model = {'name', 'tag', 'clan_id'}
 
 
 @api_route('/clan', methods=['POST'])
